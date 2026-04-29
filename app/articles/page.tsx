@@ -14,27 +14,47 @@ const ARTICLES: {
   title: string;
   description: string;
   emoji: string;
+  tag: string;
 }[] = [
   {
     slug: "how-to-use",
-    title: "FIREシミュレーターの使い方",
+    title: "FIREシミュレーターを「正しく」使ㄆ10のコツ",
     description:
-      "基本情報・配偶者・子供・住居・支出・運用利回りの入力ポイントと、グラフの読み方を画面に沿って解説します。",
-    emoji: "📘",
+      "9割の人が誤入力する落とし穴と、シミュレーション精度を一気に上げる入力テクニック。項目ごとに「誤入力 → 直し方 → どれだけ結果が変わるか」を具体例つきで解説。",
+    emoji: "✍️",
+    tag: "使い方",
   },
   {
     slug: "use-cases",
-    title: "応用例：DINKs/子持ち/独身/Coast FIRE",
+    title: "ケーススタディ：年収別・家族構成別のFIRE現実解",
     description:
-      "ライフスタイル別にどんな入力をすれば現実的な試算になるか、設定例と読み解き方を紹介します。",
-    emoji: "🧭",
+      "年収400万独身、共働きDINKs、子持ち時短世帯、高所得サラリーマンの4ケースについて、必要資産・到達年齢・もっとも効くレバーを実数で提示。",
+    emoji: "🔬",
+    tag: "事例",
   },
   {
     slug: "fire-basics",
-    title: "FIREとは？4%ルールと必要資産の基礎",
+    title: "日本版４％ルール：本家とどこが違うのか",
     description:
-      "FIRE/サイドFIRE/Barista FIRE/Coast FIRE の違いと、必要資産の25倍ルールの考え方を整理します。",
-    emoji: "💡",
+      "米国発祥の4%ルールが日本でそのまま当てはまらない5つの理由と、日本人向けに補正した「現実的な取り崩し率」を、研究データと併せて解説。",
+    emoji: "🌏",
+    tag: "基礎",
+  },
+  {
+    slug: "education-cost",
+    title: "子供1人いくら？教育費の本当の数字（2026年版）",
+    description:
+      "「子供1人1,000万円」は最安シナリオだった。幼稚園から大学院まで、公立・私立の組み合わせで「本当にいくらかかるのか」を文科省データで分解。",
+    emoji: "🎓",
+    tag: "教育費",
+  },
+  {
+    slug: "post-fire-tax",
+    title: "FIRE後の落とし穴：健康保険・住民税・年金の真実",
+    description:
+      "「資産１億円あればFIREできる」と思っていた人がリタイア初年度にぶつかる4大コストの正体と、賆い回避策をまとめます。",
+    emoji: "⚠️",
+    tag: "税金・社保",
   },
 ];
 
@@ -61,8 +81,11 @@ export default function ArticlesIndexPage() {
               href={`/articles/${a.slug}`}
               className="block rounded-2xl border border-zinc-200 hover:border-zinc-400 bg-white hover:bg-zinc-50 p-6 transition-colors h-full"
             >
-              <div className="text-2xl mb-2" aria-hidden>
-                {a.emoji}
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-2xl" aria-hidden>{a.emoji}</div>
+                <span className="text-[10px] font-medium tracking-widest uppercase text-zinc-400">
+                  {a.tag}
+                </span>
               </div>
               <div className="text-base font-semibold text-zinc-900 mb-1">
                 {a.title}

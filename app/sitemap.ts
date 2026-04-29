@@ -6,7 +6,7 @@ const BASE = "https://melos9.github.io/life_pay";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-  const articles = ["how-to-use", "use-cases", "fire-basics"];
+  const articles = ["how-to-use", "use-cases", "fire-basics", "education-cost", "post-fire-tax"];
   return [
     {
       url: `${BASE}/`,

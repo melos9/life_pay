@@ -1641,37 +1641,64 @@ export default function ForecastPage() {
       {/* 解説記事への導線 */}
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8">
         <h2 className="text-lg font-semibold text-zinc-900 mb-2">
-          もっと知りたい方へ：解説記事
+          シミュレーションを「数字つきの意思決定」に変える解説記事
         </h2>
         <p className="text-sm text-zinc-600 mb-4">
-          シミュレーターの詳しい使い方、ライフスタイル別の応用例、FIREそのものの基礎知識を別ページで解説しています。
+          ありがちな誤入力、ケーススタディ、日本特有の落とし穴まで。読み物として面白く、実装に直結する5本を用意しました。
         </p>
-        <ul className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
           <li>
             <Link
               href="/articles/how-to-use"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors"
+              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
             >
-              <span aria-hidden className="mr-1">📘</span>
-              使い方ガイド
+              <span aria-hidden className="mr-1">✍️</span>
+              シミュレーターを正しく使う10のコツ
             </Link>
           </li>
           <li>
             <Link
               href="/articles/use-cases"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors"
+              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
             >
-              <span aria-hidden className="mr-1">🧭</span>
-              応用例（DINKs / 子持ち / Coast FIRE 等）
+              <span aria-hidden className="mr-1">🔬</span>
+              ケーススタディ：年収・家族構成別のFIRE現実解
             </Link>
           </li>
           <li>
             <Link
               href="/articles/fire-basics"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors"
+              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
             >
-              <span aria-hidden className="mr-1">💡</span>
-              FIREとは？4%ルールの基礎
+              <span aria-hidden className="mr-1">🌏</span>
+              日本版4%ルール：本家とどこが違うのか
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/articles/education-cost"
+              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
+            >
+              <span aria-hidden className="mr-1">🎓</span>
+              子供1人いくら？教育費の本当の数字
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/articles/post-fire-tax"
+              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
+            >
+              <span aria-hidden className="mr-1">⚠️</span>
+              FIRE後の落とし穴：健保・住民税・年金の真実
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/articles"
+              className="block rounded-xl border border-dashed border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50 p-4 transition-colors h-full text-zinc-500 hover:text-zinc-900"
+            >
+              <span aria-hidden className="mr-1">📚</span>
+              すべての記事を見る →
             </Link>
           </li>
         </ul>
