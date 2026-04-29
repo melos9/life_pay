@@ -108,6 +108,7 @@ interface SimulationResult {
   rows: YearRow[];
   fireAge: number | null; // age when assets >= 25 × retire annual expense (4% rule)
   assetsAtRetirement: number;
+  requiredAssetsAtRetirement: number; // inflation-adjusted nest-egg target (= retireExpenseAtRetirement × 25)
   depletionAge: number | null; // age when assets first go <= 0
   lastsToLifeAge: boolean;
   peakAssets: number;
@@ -138,8 +139,13 @@ function simulate(s: FireSettings): SimulationResult {
 
   let fireAge: number | null = null;
   let depletionAge: number | null = null;
-  // Default: if retiring immediately, nest egg is current assets.
+  // Default: if retiring this year (retireAge === currentAge), the nest egg is
+  // exactly the current assets — no working-year end-value will ever be
+  // captured by the loop, so this initial value is the correct fallback.
   let assetsAtRetirement = assets;
+  // Inflation-adjusted nest-egg target at the moment of retirement.
+  // Default to today's value; will be overwritten when we reach retireAge.
+  let requiredAssetsAtRetirement = clampNumber(s.retireAnnualExpense) * 25;
   let peakAssets = assets;
 
   for (let age = currentAge; age <= lifeAge; age++) {
@@ -178,8 +184,10 @@ function simulate(s: FireSettings): SimulationResult {
       endAssets,
     });
 
-    // FIRE rule: assets cover 25× post-retirement annual expense (4% safe withdrawal)
-    // Use today's-money equivalent: compare nominal endAssets vs nominal retireExpense × 25
+    // FIRE rule: assets cover 25× annual retirement expense at that moment.
+    // Both `endAssets` and `retireExpense` are in nominal (year-of-event)
+    // money, so the inflation cancels — equivalent to: "if I retired today,
+    // could my real-purchasing-power assets fund 25 years of today's spending?"
     if (
       fireAge === null &&
       retireExpense > 0 &&
@@ -191,6 +199,9 @@ function simulate(s: FireSettings): SimulationResult {
     if (age === retireAge - 1) {
       // End of the last working year = nest egg entering retirement.
       assetsAtRetirement = endAssets;
+      // The inflated retireExpense at this point reflects what it will cost
+      // in nominal terms once retirement starts the following year.
+      requiredAssetsAtRetirement = retireExpense * (1 + inf) * 25;
     }
 
     if (depletionAge === null && endAssets <= 0 && phase === "retirement") {
@@ -210,12 +221,6 @@ function simulate(s: FireSettings): SimulationResult {
     assets = endAssets;
   }
 
-  // If we never set assetsAtRetirement (e.g. retireAge beyond lifeAge), use last
-  // row's end value as a fallback.
-  if (rows.length > 0 && retireAge > lifeAge) {
-    assetsAtRetirement = rows[rows.length - 1].endAssets;
-  }
-
   const lastRow = rows[rows.length - 1];
   const lastsToLifeAge = !!lastRow && lastRow.endAssets > 0;
 
@@ -223,6 +228,7 @@ function simulate(s: FireSettings): SimulationResult {
     rows,
     fireAge,
     assetsAtRetirement,
+    requiredAssetsAtRetirement,
     depletionAge,
     lastsToLifeAge,
     peakAssets,
@@ -505,11 +511,11 @@ export default function ForecastPage() {
           <SummaryCard
             label="リタイア時の予測資産"
             value={formatCurrency(Math.round(result.assetsAtRetirement))}
-            sub={`必要資産: ${formatCurrency(
-              Math.round(settings.retireAnnualExpense * 25)
+            sub={`必要資産 (4%ルール): ${formatCurrency(
+              Math.round(result.requiredAssetsAtRetirement)
             )}`}
             tone={
-              result.assetsAtRetirement >= settings.retireAnnualExpense * 25
+              result.assetsAtRetirement >= result.requiredAssetsAtRetirement
                 ? "green"
                 : "orange"
             }
