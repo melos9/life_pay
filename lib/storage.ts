@@ -14,17 +14,8 @@ export const DEFAULT_INCOME_CATEGORIES: Category[] = [
 ];
 
 export const DEFAULT_EXPENSE_CATEGORIES: Category[] = [
-  { id: "food", name: "食費", type: "expense", color: "#ef4444", icon: "🍽️" },
-  { id: "housing", name: "住居費", type: "expense", color: "#f97316", icon: "🏠" },
-  { id: "transport", name: "交通費", type: "expense", color: "#eab308", icon: "🚃" },
-  { id: "utilities", name: "光熱費", type: "expense", color: "#f59e0b", icon: "💡" },
-  { id: "entertainment", name: "娯楽費", type: "expense", color: "#8b5cf6", icon: "🎮" },
-  { id: "clothing", name: "衣類", type: "expense", color: "#ec4899", icon: "👗" },
-  { id: "health", name: "医療・健康", type: "expense", color: "#06b6d4", icon: "🏥" },
-  { id: "education", name: "教育", type: "expense", color: "#3b82f6", icon: "📚" },
-  { id: "communication", name: "通信費", type: "expense", color: "#64748b", icon: "📱" },
-  { id: "insurance", name: "保険", type: "expense", color: "#78716c", icon: "🛡️" },
-  { id: "other_expense", name: "その他支出", type: "expense", color: "#9ca3af", icon: "📦" },
+  { id: "regular_expense", name: "通常支出", type: "expense", color: "#9ca3af", icon: "💸" },
+  { id: "large_expense", name: "大型支出", type: "expense", color: "#ef4444", icon: "🎓" },
 ];
 
 export const DEFAULT_CATEGORIES: Category[] = [

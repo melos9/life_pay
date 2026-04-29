@@ -18,7 +18,7 @@ const EMPTY_FORM: Omit<Transaction, "id"> = {
   date: new Date().toISOString().split("T")[0],
   amount: 0,
   type: "expense",
-  category: "food",
+  category: "regular_expense",
   description: "",
   accountId: "",
 };

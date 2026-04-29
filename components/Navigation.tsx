@@ -8,6 +8,7 @@ const navItems = [
   { href: "/transactions", label: "収支記録", icon: "💹" },
   { href: "/accounts", label: "資産口座", icon: "🏦" },
   { href: "/reports", label: "月次レポート", icon: "📊" },
+  { href: "/forecast", label: "予測ツール", icon: "🔮" },
 ];
 
 export default function Navigation() {
