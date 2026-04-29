@@ -140,12 +140,11 @@ export default function ForecastPage() {
 
     // Add a few historic months for context
     const historic = monthly.slice(-3);
-    let runningAssets = totalAssets;
-    // Walk back to compute starting point before historic window
+    // Walk back to compute starting balance before the historic window
     const historicNetSum = historic.reduce((s, m) => s + m.net, 0);
-    let historicStart = totalAssets - historicNetSum;
+    let runningAssets = totalAssets - historicNetSum;
     for (const h of historic) {
-      historicStart += h.net;
+      runningAssets += h.net;
       rows.push({
         month: h.month,
         label: formatMonthLabel(h.month),
@@ -153,10 +152,11 @@ export default function ForecastPage() {
         regularExpense: h.regularExpense,
         largeExpense: h.largeExpense,
         net: h.net,
-        cumulativeAssets: historicStart,
+        cumulativeAssets: runningAssets,
         isHistoric: true,
       });
     }
+    // After historic loop, runningAssets === totalAssets (current).
 
     // Forecast horizon months starting from current month +1
     for (let i = 1; i <= horizon; i++) {
