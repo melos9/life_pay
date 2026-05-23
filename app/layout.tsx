@@ -144,7 +144,7 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         )}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <nav className="flex items-center gap-4 text-xs text-zinc-500">
             <Link
               href="/"
@@ -164,7 +164,7 @@ export default function RootLayout({
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           {children}
         </main>
-        <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-xs text-zinc-500 border-t border-zinc-200">
+        <footer className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-xs text-zinc-500 border-t border-zinc-200">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span>© {new Date().getFullYear()} {SITE_NAME}</span>
             <div className="flex items-center gap-4">

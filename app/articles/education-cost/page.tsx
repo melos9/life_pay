@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { AdSlot } from "../../../components/AdSlot";
 import {
   ArticleLayout,
+  Callout,
   H2,
   H3,
+  Hi,
   Note,
   P,
+  Stat,
+  StatGrid,
   UL,
 } from "../_components/ArticleLayout";
 
@@ -24,7 +28,7 @@ export default function EducationCostPage() {
       updatedAt="2026年4月"
       related={[
         { slug: "use-cases", title: "ケーススタディ：年収別・家族構成別のFIRE現実解" },
-        { slug: "how-to-use", title: "FIREシミュレーターを正しく使う10のコツ" },
+        { slug: "how-to-use", title: "FIREを近づける6つの戦略視点" },
         { slug: "post-fire-tax", title: "FIRE後の落とし穴：健康保険・住民税・年金" },
       ]}
     >
@@ -33,6 +37,15 @@ export default function EducationCostPage() {
         この差は計算範囲（学校外活動を含む / 含まない、生活費を含む / 含まない）と、進路パターン（公立中心 / 私立中心）の違いから生まれます。
         ここではFIRE計画で必要な「<strong>親が直接負担する教育費</strong>」に絞り、文部科学省「子供の学習費調査」「学生生活調査」の最新値ベースで再構成します。
       </P>
+
+      <StatGrid>
+        <Stat label="最安シナリオ" value="約1,200万円" hint="幼〜大すべて公立/国公立" />
+        <Stat label="中庸シナリオ" value="約2,000万円" hint="高校私立 + 私立文系" />
+        <Stat label="高額シナリオ" value="約3,500万円+" hint="小学校から私立 / 私立理系" />
+      </StatGrid>
+      <Callout type="tip" title="FIRE計画で効くのは「ピーク年」">
+        総額より<Hi>大学入学前後の数年</Hi>に支出が集中する事実が要注意。子の生年と進路を入れて、家計のピークがいつ来るかを先に把握しましょう。
+      </Callout>
 
       <H2>ステージ別の年額（学校教育費 + 学校外活動費）</H2>
       <P>

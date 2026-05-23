@@ -6,6 +6,8 @@ import {
   H3,
   Note,
   P,
+  Stat,
+  StatGrid,
   UL,
 } from "../_components/ArticleLayout";
 
@@ -29,6 +31,11 @@ export default function FireBasicsPage() {
       ]}
     >
       <H2>4%ルールの正体</H2>
+      <StatGrid>
+        <Stat label="想定期間" value="30年" hint="FIRE後45年生活には短い" />
+        <Stat label="枯渇確率" value="約5%" hint="米国1926-1995年データ" />
+        <Stat label="日本向け推奨" value="3.0、3.5%" hint="環境差を踏まえ保守化" />
+      </StatGrid>
       <P>
         4%ルールは、1998年の米トリニティ大学の研究（Trinity Study）が起点です。
         1926〜1995年の米国市場で、株式50%・債券50%のポートフォリオから初年に総資産の4%を取り崩し、

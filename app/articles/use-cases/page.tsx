@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { AdSlot } from "../../../components/AdSlot";
 import {
   ArticleLayout,
+  Callout,
   H2,
   H3,
+  Hi,
   Note,
   P,
+  Stat,
+  StatGrid,
   UL,
 } from "../_components/ArticleLayout";
 
@@ -23,7 +27,7 @@ export default function UseCasesPage() {
       lead="「自分はFIREできるのか？」を考えるとき、平均値より自分に近いケースの数字を見るほうが圧倒的に役立ちます。4つの典型ケースについて、必要資産・到達年齢・もっとも効くレバーを実数で示します。"
       updatedAt="2026年4月"
       related={[
-        { slug: "how-to-use", title: "FIREシミュレーターを正しく使う10のコツ" },
+        { slug: "how-to-use", title: "FIREを近づける6つの戦略視点" },
         { slug: "fire-basics", title: "日本版4%ルール：本家とどこが違うのか" },
         { slug: "post-fire-tax", title: "FIRE後の落とし穴：健康保険・住民税・年金" },
       ]}
@@ -32,6 +36,16 @@ export default function UseCasesPage() {
         以下の数字はすべて、本シミュレーターでデフォルト前提（インフレ年1.5%、現役利回り5%、リタイア後利回り3%、リタイア後支出80%）を使った場合の概算です。
         ご自身の状況にあてはめるときは、URLパラメータで保存して微調整しながら見比べてください。
       </P>
+
+      <StatGrid>
+        <Stat label="独身400万" value="57〜58歳" hint="50歳FIREは届かない / 家賃で3年動く" />
+        <Stat label="DINKs" value="48〜52歳" hint="完済年齢の前倒しが鍵" />
+        <Stat label="子持ち" value="59〜62歳" hint="教育費ピーク後のFIREが現実的" />
+      </StatGrid>
+      <Callout type="info" title="4ケースの結論を先に">
+        FIRE速度を決めるのは <Hi>固定費 / 教育プラン / リタイア後支出</Hi> の3つで、
+        年収はそれより下のレバーでした。詳しくはケース別解説で。
+      </Callout>
 
       <H2>ケース1: 30歳・独身・年収手取り400万円・資産200万円</H2>
       <P>

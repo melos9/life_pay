@@ -28,7 +28,9 @@ input[type="number"] {
 }
 
 *:focus-visible {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -40,3 +42,51 @@ input[type="number"] {
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; background-clip: padding-box; }
+
+/* ========== 印刷 / PDF出力 ========== */
+@media print {
+  /* ページ設定 */
+  @page {
+    size: A4;
+    margin: 15mm 12mm;
+  }
+
+  /* 印刷不要な要素を非表示 */
+  .no-print {
+    display: none !important;
+  }
+
+  /* スクロール制限を解除して全行表示 */
+  .print-no-scroll {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* 改ページ制御 */
+  .print-break-before {
+    break-before: page;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+
+  /* 全体の背景と色を調整 */
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11px;
+  }
+
+  /* パネルの shadow などを除去 */
+  * {
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Tailwind の bg- 系が消えないよう */
+  [class*="bg-violet"], [class*="bg-amber"], [class*="bg-red"], [class*="bg-green"], [class*="bg-emerald"], [class*="bg-blue"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { AdSlot } from "../../../components/AdSlot";
 import {
   ArticleLayout,
+  Callout,
   H2,
   H3,
+  Hi,
   Note,
   P,
+  Stat,
+  StatGrid,
   UL,
 } from "../_components/ArticleLayout";
 
@@ -25,7 +29,7 @@ export default function PostFireTaxPage() {
       related={[
         { slug: "fire-basics", title: "日本版4%ルール：本家とどこが違うのか" },
         { slug: "use-cases", title: "ケーススタディ：年収別・家族構成別のFIRE現実解" },
-        { slug: "how-to-use", title: "FIREシミュレーターを正しく使う10のコツ" },
+          { slug: "how-to-use", title: "FIREを近づける6つの戦略視点" },
       ]}
     >
       <P>
@@ -33,6 +37,15 @@ export default function PostFireTaxPage() {
         在職中は給与天引きで意識することがなかった健康保険・住民税・年金が、リタイア後は<strong>自分で全額納付</strong>する現金支出に化けます。
         ここでは、4大コストごとに金額感と最適化テクを整理します。
       </P>
+
+      <StatGrid>
+        <Stat label="住民税" value="60〜80万円" hint="退職翼年に現役時の金額を払う" />
+        <Stat label="国保・介護" value="80万円超" hint="上限近くまで上がりうる" />
+        <Stat label="国民年金" value="約 21万円" hint="60歳まで交付義務、免除制度あり" />
+      </StatGrid>
+      <Callout type="warn" title="FIRE初年度は「現金バッファ」が必須">
+        退職翼年に住民税と国保が<Hi>まとめて請求される</Hi>ため、同年に100万円以上の現金支出が重なります。計画では「住民税1年分 + 国保1年分」を別枚で保守しておくと安全です。
+      </Callout>
 
       <H2>① 退職翌年に襲ってくる「住民税のタイムマシン」</H2>
       <P>
