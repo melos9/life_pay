@@ -31,6 +31,8 @@ jobs:
       - name: Build (Next.js static export)
         env:
           NEXT_PUBLIC_ADSENSE_CLIENT: ${{ vars.NEXT_PUBLIC_ADSENSE_CLIENT }}
+          NEXT_PUBLIC_SITE_URL: https://lifeplan-sim.link
+          NEXT_PUBLIC_BASE_PATH: ""
         run: npm run build
 
       - name: Ensure .nojekyll
