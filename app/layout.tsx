@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const SITE_NAME = "ライフプラン資産シミュレーター";
 const SITE_DESCRIPTION =
@@ -149,27 +150,14 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         )}
-        <header className="no-print border-b border-zinc-200 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
-            <Link href="/" className="text-sm font-semibold text-zinc-900 hover:text-zinc-700 transition-colors">
-              {SITE_NAME}
-            </Link>
-            <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-zinc-600">
-              <Link href="/" className="hover:text-zinc-900 transition-colors">シミュレーター</Link>
-              <Link href="/how-to-use" className="hover:text-zinc-900 transition-colors">使い方</Link>
-              <Link href="/disclaimer" className="hover:text-zinc-900 transition-colors">免責事項</Link>
-              <Link href="/privacy-policy" className="hover:text-zinc-900 transition-colors">プライバシーポリシー</Link>
-              <Link href="/contact" className="hover:text-zinc-900 transition-colors">お問い合わせ</Link>
-            </nav>
-          </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <SiteHeader siteName={SITE_NAME} />
+        <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
           {children}
         </main>
-        <footer className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-xs text-zinc-500 border-t border-zinc-200">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <footer className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-xs text-zinc-500 border-t border-zinc-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span>© {new Date().getFullYear()} {SITE_NAME}</span>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <Link href="/" className="hover:text-zinc-900">シミュレーター</Link>
               <Link href="/how-to-use" className="hover:text-zinc-900">使い方</Link>
               <Link href="/disclaimer" className="hover:text-zinc-900">免責事項</Link>
