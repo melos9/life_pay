@@ -1,4 +1,1 @@
-# Google AdSense ads.txt
-# 利用するパブリッシャーIDに合わせて pub-XXXXXXXXXXXXXXXX を書き換えてください。
-# 例) google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0
-google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+google.com, pub-9675297104599817, DIRECT, f08c47fec0942fa0
