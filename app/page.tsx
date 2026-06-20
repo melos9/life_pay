@@ -3107,7 +3107,7 @@ function buildImprovementActions(
     const factor = rm > 0 ? (Math.pow(1 + rm, n) - 1) / rm : n;
     const monthly = factor > 0 ? shortfall / factor : 0;
     actions.push({
-      title: "毎月いくら追加で積み立てれば届くか",
+      title: "毎月いくら追加で積み立てれば必要資産に届くか",
       value: `+ ${formatCompactJPY(Math.round(monthly))}円 / 月`,
       hint: `あと${yearsToRetire}年、リタイア前利回り${s.returnRate}%で運用した想定`,
       tone: "blue",
@@ -3556,10 +3556,10 @@ function ImprovementActions({
     <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7">
       <div className="mb-5">
         <h3 className="text-base font-semibold text-zinc-900">
-          達成までのヒント
+          目標達成のヒント（リタイア時の必要資産・FIRE）
         </h3>
         <p className="text-xs text-zinc-500 mt-1">
-          現在の入力値を元に、何を変えると結果が変わるかを試算しています
+          リタイア時に必要な資産（寿命まで取り崩しても足りる額）やFIRE目標に届くために、何を変えると結果がどう変わるかを試算しています
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
