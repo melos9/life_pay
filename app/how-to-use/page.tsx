@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function HowToUsePage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8">
-      <h1 className="text-2xl font-bold text-zinc-900">使い方</h1>
+    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+      <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">使い方</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         このシミュレーターは、現在の資産・収入・支出・年金・家族構成をもとに、将来の資産推移を年次で試算するツールです。
       </p>

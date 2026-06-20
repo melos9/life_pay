@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function DisclaimerPage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8">
-      <h1 className="text-2xl font-bold text-zinc-900">免責事項</h1>
+    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+      <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">免責事項</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         本シミュレーションは、将来の資金計画を考えるための参考情報を提供するものです。ご利用にあたっては、以下の内容をご確認ください。
       </p>

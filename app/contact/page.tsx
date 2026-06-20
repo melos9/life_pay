@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8">
-      <h1 className="text-2xl font-bold text-zinc-900">お問い合わせ</h1>
+    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+      <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">お問い合わせ</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         ご意見・不具合報告・改善要望は、下記の方法でご連絡ください。
       </p>
