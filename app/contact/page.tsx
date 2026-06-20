@@ -1,17 +1,25 @@
-import type { Metadata } from "next";
+import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "お問い合わせ",
   description:
     "ライフプラン資産シミュレーターに関するご意見・不具合報告・ご要望の連絡先です。",
-  alternates: {
-    canonical: "/contact",
-  },
-};
+  path: "/contact",
+});
+
+const BREADCRUMB_JSON_LD = breadcrumbJsonLd([
+  { name: "ホーム", path: "/" },
+  { name: "お問い合わせ", path: "/contact" },
+]);
 
 export default function ContactPage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_JSON_LD) }}
+      />
+      <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
       <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">お問い合わせ</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         本サイトに関するご意見、不具合のご報告、改善のご要望などがございましたら、以下の連絡先までお寄せくださいますようお願い申し上げます。
@@ -38,5 +46,6 @@ export default function ContactPage() {
         個人情報や機微な情報（お名前、ご住所、口座情報、マイナンバーなど）はお送りにならないようお願い申し上げます。
       </p>
     </section>
+    </>
   );
 }

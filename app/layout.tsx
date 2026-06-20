@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
-
-const SITE_NAME = "ライフプラン資産シミュレーター";
-const SITE_DESCRIPTION =
-  "ライフプラン資産シミュレーターは、FIRE・老後資金・教育費までまとめて無料で試算できる資産シミュレーターです。年齢・年収・支出・住居費・子育て費を入力すると、将来の資産推移と必要資金の目安をグラフで確認できます。";
-const SITE_URL = "https://melos9.github.io/life_pay";
+import {
+  DEFAULT_OG_TITLE,
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -15,37 +17,7 @@ export const metadata: Metadata = {
     template: `%s｜${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  keywords: [
-    "FIRE",
-    "fire",
-    "FIREとは",
-    "fireとは",
-    "ライフプラン資産シミュレーター",
-    "ライフプラン資産シュミレーター",
-    "資産シミュレーター",
-    "ライフプラン シミュレーター",
-    "ライフプラン シュミレーター",
-    "FIREシミュレーター",
-    "シミュレーター",
-    "シミュレーション",
-    "早期リタイア",
-    "セミリタイア",
-    "サイドFIRE",
-    "リーンFIRE",
-    "ファットFIRE",
-    "結婚",
-    "子育て",
-    "教育費",
-    "いくら",
-    "いくら必要",
-    "FIRE いくら",
-    "FIRE いくら必要",
-    "資産形成",
-    "ライフプラン",
-    "4%ルール",
-    "資産運用",
-    "老後資金",
-  ],
+  keywords: SITE_KEYWORDS,
   authors: [{ name: SITE_NAME }],
   applicationName: SITE_NAME,
   category: "finance",
@@ -64,12 +36,12 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算",
+    title: DEFAULT_OG_TITLE,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算",
+    title: DEFAULT_OG_TITLE,
     description: SITE_DESCRIPTION,
   },
   alternates: {
@@ -81,7 +53,23 @@ const JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      inLanguage: "ja",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    {
       "@type": "WebApplication",
+      "@id": `${SITE_URL}/#webapp`,
       name: SITE_NAME,
       url: SITE_URL,
       applicationCategory: "FinanceApplication",
@@ -89,6 +77,7 @@ const JSON_LD = {
       description: SITE_DESCRIPTION,
       offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
       inLanguage: "ja",
+      isPartOf: { "@id": `${SITE_URL}/#website` },
     },
     {
       "@type": "FAQPage",

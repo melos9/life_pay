@@ -1,18 +1,26 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "使い方",
   description:
     "ライフプラン資産シミュレーターの使い方。入力手順、結果の見方、注意点と免責事項をまとめています。",
-  alternates: {
-    canonical: "/how-to-use",
-  },
-};
+  path: "/how-to-use",
+});
+
+const BREADCRUMB_JSON_LD = breadcrumbJsonLd([
+  { name: "ホーム", path: "/" },
+  { name: "使い方", path: "/how-to-use" },
+]);
 
 export default function HowToUsePage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_JSON_LD) }}
+      />
+      <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
       <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">使い方</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         このシミュレーターは、現在の資産・収入・支出・年金・家族構成をもとに、将来の資産推移を年次で試算するツールです。
@@ -52,5 +60,6 @@ export default function HowToUsePage() {
       <AdSlot slot="0000000002" />
       */}
     </section>
+    </>
   );
 }

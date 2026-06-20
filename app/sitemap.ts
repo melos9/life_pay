@@ -1,41 +1,40 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-static";
-
-const BASE = "https://melos9.github.io/life_pay";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
   return [
     {
-      url: `${BASE}/`,
+      url: `${SITE_URL}/`,
       lastModified,
-      changeFrequency: "monthly",
+      changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${BASE}/how-to-use`,
+      url: `${SITE_URL}/how-to-use`,
       lastModified,
-      changeFrequency: "yearly",
-      priority: 0.6,
+      changeFrequency: "monthly",
+      priority: 0.7,
     },
     {
-      url: `${BASE}/disclaimer`,
+      url: `${SITE_URL}/disclaimer`,
       lastModified,
       changeFrequency: "yearly",
-      priority: 0.5,
+      priority: 0.4,
     },
     {
-      url: `${BASE}/privacy-policy`,
+      url: `${SITE_URL}/privacy-policy`,
       lastModified,
       changeFrequency: "yearly",
-      priority: 0.5,
+      priority: 0.4,
     },
     {
-      url: `${BASE}/contact`,
+      url: `${SITE_URL}/contact`,
       lastModified,
       changeFrequency: "yearly",
-      priority: 0.5,
+      priority: 0.4,
     },
   ];
 }

@@ -1,18 +1,26 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "プライバシーポリシー",
   description:
     "ライフプラン資産シミュレーターにおける個人情報・アクセス情報の取り扱い方針です。",
-  alternates: {
-    canonical: "/privacy-policy",
-  },
-};
+  path: "/privacy-policy",
+});
+
+const BREADCRUMB_JSON_LD = breadcrumbJsonLd([
+  { name: "ホーム", path: "/" },
+  { name: "プライバシーポリシー", path: "/privacy-policy" },
+]);
 
 export default function PrivacyPolicyPage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_JSON_LD) }}
+      />
+      <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
       <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">プライバシーポリシー</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         ライフプラン資産シミュレーター（以下「本サービス」）における、情報の取り扱い方針をご案内します。
@@ -73,5 +81,6 @@ export default function PrivacyPolicyPage() {
         からご連絡ください。
       </p>
     </section>
+    </>
   );
 }

@@ -1,17 +1,25 @@
-import type { Metadata } from "next";
+import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "免責事項",
   description:
     "ライフプラン資産シミュレーターの利用上の注意、非保証事項、責任範囲についてご案内します。",
-  alternates: {
-    canonical: "/disclaimer",
-  },
-};
+  path: "/disclaimer",
+});
+
+const BREADCRUMB_JSON_LD = breadcrumbJsonLd([
+  { name: "ホーム", path: "/" },
+  { name: "免責事項", path: "/disclaimer" },
+]);
 
 export default function DisclaimerPage() {
   return (
-    <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_JSON_LD) }}
+      />
+      <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
       <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">免責事項</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
         本シミュレーションは、将来の資金計画を考えるための参考情報を提供するものです。ご利用にあたっては、以下の内容をご確認ください。
@@ -28,5 +36,6 @@ export default function DisclaimerPage() {
         <li>本シミュレーションの内容は、予告なく変更する場合があります。</li>
       </ul>
     </section>
+    </>
   );
 }
