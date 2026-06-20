@@ -3677,8 +3677,18 @@ function AssetsChart({
   const ageSpan = Math.max(1, maxAge - minAge);
 
   const fireRows = fireScenarioRows && fireScenarioRows.length > 0 ? fireScenarioRows : null;
-  const allEndAssets = fireRows
-    ? [...rows.map((r) => r.endAssets), ...fireRows.map((r) => r.endAssets)]
+  // FIRE達成シナリオの線は、FIRE縦線と通常線が交わる点を起点に、FIRE年齢以降のみ描画する。
+  // 起点 = 通常シナリオの fireAge 年末資産（縦線「FIRE」とぴったり交わる点）
+  const fireSegment =
+    fireRows && fireAge !== null
+      ? (() => {
+          const startRow = rows.find((r) => r.age === fireAge);
+          const tail = fireRows.filter((r) => r.age > fireAge);
+          return startRow ? [startRow, ...tail] : tail;
+        })()
+      : null;
+  const allEndAssets = fireSegment
+    ? [...rows.map((r) => r.endAssets), ...fireSegment.map((r) => r.endAssets)]
     : rows.map((r) => r.endAssets);
   const minVal = Math.min(0, ...allEndAssets);
   const maxVal = Math.max(1, ...allEndAssets);
@@ -3693,8 +3703,8 @@ function AssetsChart({
 
   // Path builder: smooth area for endAssets
   const linePoints = rows.map((r) => `${x(r.age)},${y(r.endAssets)}`).join(" ");
-  const fireLinePoints = fireRows
-    ? fireRows.map((r) => `${x(r.age)},${y(r.endAssets)}`).join(" ")
+  const fireLinePoints = fireSegment
+    ? fireSegment.map((r) => `${x(r.age)},${y(r.endAssets)}`).join(" ")
     : null;
   const areaPath = `M ${x(rows[0].age)},${y(0)} L ${rows
     .map((r) => `${x(r.age)},${y(r.endAssets)}`)
@@ -3937,7 +3947,7 @@ function AssetsChart({
                 stroke="#18181b"
                 strokeWidth="2"
               />
-              {fireRows && hoverIdx !== null && fireRows[hoverIdx] && (
+              {fireRows && fireAge !== null && hoverIdx !== null && fireRows[hoverIdx] && fireRows[hoverIdx].age >= fireAge && (
                 <circle
                   cx={x(fireRows[hoverIdx].age)}
                   cy={y(fireRows[hoverIdx].endAssets)}
@@ -3971,7 +3981,7 @@ function AssetsChart({
               </span>
             </div>
             <Row label="年末資産" value={formatCurrency(Math.round(hover.endAssets))} bold />
-            {fireRows && hoverIdx !== null && fireRows[hoverIdx] && (
+            {fireRows && fireAge !== null && hoverIdx !== null && fireRows[hoverIdx] && fireRows[hoverIdx].age >= fireAge && (
               <Row
                 label="FIRE達成シナリオ"
                 value={formatCurrency(Math.round(fireRows[hoverIdx].endAssets))}
