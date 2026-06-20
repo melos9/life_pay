@@ -3,16 +3,16 @@ import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
 
-const SITE_NAME = "FIREシミュレーター";
+const SITE_NAME = "ライフプラン資産シミュレーター";
 const SITE_DESCRIPTION =
-  "FIRE（早期リタイア）にいくら必要か、結婚・子育て・住居費を含めて1分で試算できる無料シミュレーター。年齢・年収・支出・教育費・年金まで細かく入力でき、生涯の資産推移をグラフで可視化します。FIREとは何か、達成までいくら貯めればよいかをシンプルに把握できます。";
+  "ライフプラン資産シミュレーターは、FIRE・老後資金・教育費までまとめて無料で試算できる資産シミュレーターです。年齢・年収・支出・住居費・子育て費を入力すると、将来の資産推移と必要資金の目安をグラフで確認できます。";
 const SITE_URL = "https://melos9.github.io/life_pay";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "FIREシミュレーター｜FIREにいくら必要か無料で試算（結婚・子育て対応）",
-    template: "%s｜FIREシミュレーター",
+    default: "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算（結婚・子育て対応）",
+    template: `%s｜${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     "fire",
     "FIREとは",
     "fireとは",
+    "ライフプラン資産シミュレーター",
+    "ライフプラン資産シュミレーター",
+    "資産シミュレーター",
+    "ライフプラン シミュレーター",
+    "ライフプラン シュミレーター",
     "FIREシミュレーター",
     "シミュレーター",
     "シミュレーション",
@@ -59,12 +64,12 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "FIREシミュレーター｜FIREにいくら必要か無料で試算",
+    title: "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算",
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "FIREシミュレーター｜FIREにいくら必要か無料で試算",
+    title: "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算",
     description: SITE_DESCRIPTION,
   },
   alternates: {
@@ -144,23 +149,20 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         )}
-        <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-          <nav className="flex items-center gap-4 text-xs text-zinc-500">
-            <Link
-              href="/"
-              className="hover:text-zinc-900 transition-colors"
-            >
-              シミュレーター
+        <header className="no-print border-b border-zinc-200 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+            <Link href="/" className="text-sm font-semibold text-zinc-900 hover:text-zinc-700 transition-colors">
+              {SITE_NAME}
             </Link>
-            <span className="text-zinc-300">/</span>
-            <Link
-              href="/articles"
-              className="hover:text-zinc-900 transition-colors"
-            >
-              解説記事
-            </Link>
-          </nav>
-        </div>
+            <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-zinc-600">
+              <Link href="/" className="hover:text-zinc-900 transition-colors">シミュレーター</Link>
+              <Link href="/how-to-use" className="hover:text-zinc-900 transition-colors">使い方</Link>
+              <Link href="/disclaimer" className="hover:text-zinc-900 transition-colors">免責事項</Link>
+              <Link href="/privacy-policy" className="hover:text-zinc-900 transition-colors">プライバシーポリシー</Link>
+              <Link href="/contact" className="hover:text-zinc-900 transition-colors">お問い合わせ</Link>
+            </nav>
+          </div>
+        </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           {children}
         </main>
@@ -169,9 +171,10 @@ export default function RootLayout({
             <span>© {new Date().getFullYear()} {SITE_NAME}</span>
             <div className="flex items-center gap-4">
               <Link href="/" className="hover:text-zinc-900">シミュレーター</Link>
-              <Link href="/articles" className="hover:text-zinc-900">解説記事</Link>
-              <Link href="/articles/how-to-use" className="hover:text-zinc-900">使い方</Link>
-              <Link href="/articles/use-cases" className="hover:text-zinc-900">応用例</Link>
+              <Link href="/how-to-use" className="hover:text-zinc-900">使い方</Link>
+              <Link href="/disclaimer" className="hover:text-zinc-900">免責事項</Link>
+              <Link href="/privacy-policy" className="hover:text-zinc-900">プライバシーポリシー</Link>
+              <Link href="/contact" className="hover:text-zinc-900">お問い合わせ</Link>
             </div>
           </div>
         </footer>
