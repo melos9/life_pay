@@ -1551,7 +1551,7 @@ export default function ForecastPage() {
       )}
 
       {/* Header */}
-      <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-100/70 px-6 py-6 lg:px-8 lg:py-8">
+      <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-100/70 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-zinc-900/[0.04]" aria-hidden />
         <div className="pointer-events-none absolute -left-14 -bottom-14 w-44 h-44 rounded-full bg-zinc-400/[0.08]" aria-hidden />
         <div className="relative flex items-end justify-between flex-wrap gap-4">
@@ -1560,16 +1560,16 @@ export default function ForecastPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-zinc-900" />
               Life Planner
             </div>
-            <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900">
               ライフプラン資産シミュレーター
             </h1>
-            <p className="text-zinc-600 mt-2 text-sm leading-relaxed max-w-2xl">
+            <p className="text-zinc-600 mt-2 text-xs sm:text-sm leading-relaxed max-w-2xl">
               収入・生活費・教育費・住居費を入力すると、将来の資産推移と必要資金の目安をすぐに確認できます。
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end" />
         </div>
-        <div className="relative z-10 flex items-center gap-2 no-print">
+        <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2 no-print">
           <button
             onClick={shareURL}
             disabled={!inputsValid}
@@ -1624,7 +1624,7 @@ export default function ForecastPage() {
       </div>
 
       {isDirty && inputsValid && result && (
-        <div className="no-print sticky top-3 z-30 rounded-lg p-2.5 px-3 text-xs border border-zinc-300 bg-white/95 backdrop-blur shadow-sm text-zinc-700 flex items-center justify-between gap-3">
+        <div className="no-print sticky top-[60px] z-20 rounded-lg p-2.5 px-3 text-xs border border-zinc-300 bg-white/95 backdrop-blur shadow-sm text-zinc-700 flex items-center justify-between gap-3">
           <span className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             入力に変更があります（グラフは前回の計算結果のままです）
@@ -1641,7 +1641,7 @@ export default function ForecastPage() {
 
       {/* Summary cards (top) */}
       {inputsValid && result && appliedSettings && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
           <SummaryCard
             label="リタイアまで"
             value={`${yearsToRetire} 年`}
@@ -1719,7 +1719,7 @@ export default function ForecastPage() {
       )}
 
       {!result && inputsValid && (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7 relative overflow-hidden">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7 relative overflow-hidden">
           {/* 資産推移（サンプル） */}
           <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
             <div>
@@ -2865,7 +2865,7 @@ export default function ForecastPage() {
       </Panel>
 
       {/* Calculate CTA */}
-      <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white p-6 lg:p-8 text-center">
+      <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white p-5 sm:p-6 lg:p-8 text-center">
         <p className="text-xs text-zinc-500 mb-3">
           すべての項目を入力したら、下のボタンで結果を計算しましょう
         </p>
@@ -2891,7 +2891,7 @@ export default function ForecastPage() {
             subtitle="全費目の内訳と年末資産"
           />
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto -mx-2 px-2 print-no-scroll">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm whitespace-nowrap">
               <thead className="text-zinc-500 text-xs sticky top-0 bg-white/95 backdrop-blur z-10">
                 <tr className="border-b border-zinc-200">
                   <th className="py-2 pr-2 text-left font-medium">年齢</th>
@@ -3021,7 +3021,7 @@ export default function ForecastPage() {
       <div className="no-print"><AdSlot slot="0000000000" /></div>
 
       {/* SEO: FIRE 解説セクション */}
-      <section id="fire-definition" className="rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8 space-y-6 scroll-mt-24">
+      <section id="fire-definition" className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8 space-y-6 scroll-mt-24">
         <div>
           <h2 className="text-xl font-semibold text-zinc-900 mb-2">
             このシミュレーターでわかること
@@ -3239,7 +3239,7 @@ function WithdrawalPreview({
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7">
+    <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7">
       {children}
     </section>
   );
@@ -3551,7 +3551,7 @@ function ImprovementActions({
   };
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7">
+    <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7">
       <div className="mb-5">
         <h3 className="text-base font-semibold text-zinc-900">
           達成までのヒント
@@ -3653,7 +3653,7 @@ function AssetsChart({
   const hover = hoverIdx !== null ? rows[hoverIdx] : null;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7">
       <div className="flex items-start justify-between flex-wrap gap-2 mb-5">
         <div>
           <h3 className="text-base font-semibold text-zinc-900">資産推移</h3>
@@ -3991,7 +3991,7 @@ function ExpenseChart({
   const hover = hoverIdx !== null ? rows[hoverIdx] : null;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7">
       <div className="flex items-start justify-between flex-wrap gap-2 mb-5">
         <div>
           <h3 className="text-base font-semibold text-zinc-900">収入と支出の推移</h3>
