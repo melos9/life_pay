@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AdSlot } from "../components/AdSlot";
+// import { AdSlot } from "../components/AdSlot"; // AdSense審査通過後に有効化
 
 // =============================================================================
 // Types & constants
@@ -1544,8 +1544,6 @@ export default function ForecastPage() {
                 {shareCopied ? "コピーしました" : "URLをコピー"}
               </button>
             </div>
-
-            <AdSlot slot="0000000001" className="mb-0" />
           </div>
         </div>
       )}
@@ -3018,7 +3016,11 @@ export default function ForecastPage() {
         データ基準: 2026年4月時点（年金は令和6年度老齢基礎年金満額816,000円/年を使用。習い事はコドモブースター、プロリア英会話、テニス料金相場ページの公開レンジから代表値を設定）
       </p>
 
-      <div className="no-print"><AdSlot slot="0000000000" /></div>
+      <div className="no-print">
+        {/* AdSense審査通過後に有効化
+        <AdSlot slot="0000000000" />
+        */}
+      </div>
 
       {/* SEO: FIRE 解説セクション */}
       <section id="fire-definition" className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8 space-y-6 scroll-mt-24">
