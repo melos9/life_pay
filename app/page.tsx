@@ -14,6 +14,7 @@ type SchoolType = "公立" | "私立";
 type HighSchoolType = "公立" | "私立" | "進学しない";
 type UniversityType = "国公立" | "私立文系" | "私立理系" | "進学しない";
 type GraduateType = "進学しない" | "国公立修士" | "私立修士" | "国公立博士" | "私立博士";
+type ChildAgeInputMode = "currentAge" | "birthPlan";
 type LessonType =
   | "英会話"
   | "テニス"
@@ -39,6 +40,8 @@ interface Child {
   name: string;
   /** 親が何歳のときに生まれた / 生まれる予定か */
   birthAtParentAge: number;
+  /** UI表示用。すでにいる子は現在年齢、将来の子は予定時期で入力する。 */
+  ageInputMode?: ChildAgeInputMode;
   elementary: SchoolType;
   juniorHigh: SchoolType;
   highSchool: HighSchoolType;
@@ -88,6 +91,8 @@ interface FireSettings {
   housingType: "賃貸" | "持ち家";
   monthlyHousing: number;
   housingEndAge: number;
+  /** 持ち家の住宅ローン完済後に発生する維持費（固定資産税・修繕積立等、月額・現在価値） */
+  monthlyHousingMaintenance: number;
   monthlyLivingRetired: number;
   monthlyHousingRetired: number;
   /** サイドFIRE用：リタイア後の労働・事業収入など（年額・現在価値） */
@@ -99,6 +104,7 @@ interface FireSettings {
   /** 退職時に一度だけ受け取る退職金（任意） */
   retirementBonus: number;
   otherAnnual: number;
+  otherAnnualRetired: number;
   children: Child[];
   /** 取り崩しモード。expense=支出額ベース / percent=資産の一定割合（願望取り崩し率） */
   withdrawalMode: "expense" | "percent";
@@ -118,27 +124,36 @@ interface FireSettings {
   spouse: Spouse;
 }
 
+// 文部科学省「令和5年度 子供の学習費調査」の「学校教育費＋学校給食費」（年額）。
+// 学校外活動費（塾・習い事）は本アプリで別途入力するため除外し、二重計上を回避。
+// 出典: https://www.mext.go.jp/b_menu/toukei/chousa03/gakushuuhi/kekka/k_detail/mext_00002.html
 const TUITION_PER_YEAR: {
   小学校: Record<SchoolType, number>;
   中学校: Record<SchoolType, number>;
   高校: Record<HighSchoolType, number>;
 } = {
-  小学校: { 公立: 350_000, 私立: 1_670_000 },
-  中学校: { 公立: 540_000, 私立: 1_440_000 },
-  高校:   { 公立: 510_000, 私立: 1_050_000, 進学しない: 0 },
+  小学校: { 公立: 105_000, 私立: 1_006_000 },
+  中学校: { 公立: 170_000, 私立: 1_069_000 },
+  高校:   { 公立: 309_000, 私立: 750_000, 進学しない: 0 },
 };
+// 国公立: e-Gov「国立大学等の授業料その他の費用に関する省令」の国立大学標準額。
+// 出典: https://laws.e-gov.go.jp/law/416M60000080016
+// 私立: JASSO「学生生活調査」の学費区分を参考にした授業料＋施設設備費相当の目安。
+// 出典: https://www.jasso.go.jp/statistics/gakusei_chosa/index.html
 const UNIV_PER_YEAR: Record<UniversityType, number> = {
-  国公立: 820_000,
-  私立文系: 1_350_000,
-  私立理系: 1_780_000,
+  国公立: 540_000,
+  私立文系: 960_000,
+  私立理系: 1_315_000,
   進学しない: 0,
 };
+// 大学院も国公立は国立大学等の授業料標準額 535,800円/年。
+// 私立はJASSO「学生生活調査」の大学院学費区分を参考にした目安。
 const GRAD_PER_YEAR: Record<GraduateType, number> = {
   進学しない: 0,
-  国公立修士: 820_000,
-  私立修士: 1_200_000,
-  国公立博士: 820_000,
-  私立博士: 1_200_000,
+  国公立修士: 540_000,
+  私立修士: 900_000,
+  国公立博士: 540_000,
+  私立博士: 900_000,
 };
 const GRAD_DURATION: Record<GraduateType, number> = {
   進学しない: 0,
@@ -157,12 +172,13 @@ const ENTRANCE_FEE: {
   小学校: { 公立: 0, 私立: 300_000 },
   中学校: { 公立: 0, 私立: 250_000 },
   高校:   { 公立: 60_000, 私立: 200_000, 進学しない: 0 },
-  大学:   { 国公立: 280_000, 私立文系: 230_000, 私立理系: 250_000, 進学しない: 0 },
+  // 国立大学入学料 282,000円（e-Gov掲載の文部科学省令標準額）／私立大学入学料平均の目安。
+  大学:   { 国公立: 282_000, 私立文系: 226_000, 私立理系: 251_000, 進学しない: 0 },
   大学院: {
     進学しない: 0,
-    国公立修士: 280_000,
+    国公立修士: 282_000,
     私立修士: 230_000,
-    国公立博士: 280_000,
+    国公立博士: 282_000,
     私立博士: 230_000,
   },
 };
@@ -188,12 +204,17 @@ const CHILD_LIVING_STAGES: Array<{
   { key: "大学生", label: "大学生", ageRange: "18〜21歳" },
 ];
 
+// 総務省「家計調査」（二人以上の世帯・子供のいる世帯の費目別支出）を参考に、
+// 食費・衣類・日用品・通信・医療・おこづかい等を子供1人あたりに按分した月額目安。
+// 教育費・住居費は別枠で計上するため、ここでは純粋に「子供本人の生活費」のみ。
+// 大学生は自宅通学を想定（一人暮らしの家賃は『住居費』に加算）。
+// 出典: https://www.stat.go.jp/data/kakei/
 const DEFAULT_CHILD_LIVING_COSTS: Record<ChildLivingStage, number> = {
-  未就学: 35_000,
-  小学生: 45_000,
-  中学生: 55_000,
-  高校生: 65_000,
-  大学生: 80_000,
+  未就学: 30_000,
+  小学生: 40_000,
+  中学生: 50_000,
+  高校生: 60_000,
+  大学生: 90_000,
 };
 
 const LESSON_TYPES: LessonType[] = [
@@ -258,10 +279,11 @@ const DEFAULT_CHILD = (id: string, name: string, birthAtParentAge: number): Chil
   id,
   name,
   birthAtParentAge,
+  ageInputMode: "currentAge",
   elementary: "公立",
-  juniorHigh: "私立",
-  highSchool: "私立",
-  university: "私立文系",
+  juniorHigh: "公立",
+  highSchool: "公立",
+  university: "国公立",
   graduate: "進学しない",
   cramStages: {
     小学校低学年: false,
@@ -277,29 +299,31 @@ const DEFAULT_SETTINGS: FireSettings = {
   currentAge: 30,
   retireAge: 60,
   lifeAge: 95,
-  currentAssets: 0,
-  annualIncome: 5_000_000,
+  currentAssets: 1_000_000,
+  annualIncome: 4_000_000,
   applyAnnualIncomeGrowth: false,
   annualIncomeGrowthRate: 1.0,
-  monthlyLiving: 200_000,
+  monthlyLiving: 90_000,
   housingType: "賃貸",
-  monthlyHousing: 100_000,
+  monthlyHousing: 75_000,
   housingEndAge: 60,
-  monthlyLivingRetired: 180_000,
-  monthlyHousingRetired: 80_000,
+  monthlyHousingMaintenance: 20_000,
+  monthlyLivingRetired: 90_000,
+  monthlyHousingRetired: 75_000,
   sideIncomeAnnual: 0,
   applySideIncomeGrowth: false,
   sideIncomeGrowthRate: 0.0,
   sideIncomeUntilAge: 70,
   retirementBonus: 0,
-  otherAnnual: 300_000,
+  otherAnnual: 240_000,
+  otherAnnualRetired: 240_000,
   children: [],
   withdrawalMode: "expense",
   withdrawalPercent: 4.0,
   retirementExpenseTiming: "self",
   returnRate: 4.0,
   inflationRate: 1.0,
-  pensionAnnual: 1_200_000,
+  pensionAnnual: 847_296,
   pensionWorkStartAge: 22,
   pensionKokuminMonthly: 68_000,
   pensionKouseiMonthly: 32_000,
@@ -315,7 +339,7 @@ const DEFAULT_SETTINGS: FireSettings = {
     applyAnnualIncomeGrowth: false,
     annualIncomeGrowthRate: 1.0,
     retireAge: 60,
-    pensionAnnual: 1_860_000,
+    pensionAnnual: 847_296,
     pensionStartAge: 65,
     hasKousei: true,
     workStartAge: 22,
@@ -333,50 +357,96 @@ interface Preset {
   patch: Partial<FireSettings>;
 }
 
+/** 国民年金の満額（令和8年度の老齢基礎年金満額：月70,608円 × 12 = 847,296円/年、40年加入） */
+const KOKUMIN_NENKIN_FULL = 847_296;
+/** 厚生年金の報酬比例部分の保険料乘率（令和以降、5.481/1000を適用）。 */
+const KOUSEI_NENKIN_RATE = 5.481 / 1000;
+/** 厚生年金の平均標準報酬月額の上限（65万円）。 */
+const KOUSEI_NENKIN_MAX_MONTHLY = 650_000;
+
+/** プリセット用に厚生年金加入前提で年金額を計算 */
+function presetPension(annualIncomeNet: number, retireAge: number, workStartAge = 22): number {
+  return estimateCompanyEmployeePensionBreakdown(annualIncomeNet, workStartAge, retireAge, true).totalAnnual;
+}
+
 const PRESETS: Preset[] = [
   {
     id: "single",
     label: "独身・賃貸",
-    description: "30歳・年収500万・賃貸10万円",
+    description: "30歳・手取り280万・家賃7.5万円",
     patch: {
       currentAge: 30,
-      annualIncome: 5_000_000,
-      currentAssets: 3_000_000,
-      monthlyLiving: 200_000,
+      retireAge: 65,
+      annualIncome: 2_800_000,
+      currentAssets: 1_000_000,
+      monthlyLiving: 90_000,
       housingType: "賃貸",
-      monthlyHousing: 100_000,
-      monthlyLivingRetired: 180_000,
-      monthlyHousingRetired: 80_000,
-      otherAnnual: 300_000,
+      monthlyHousing: 75_000,
+      monthlyLivingRetired: 90_000,
+      monthlyHousingRetired: 75_000,
+      otherAnnual: 240_000,
+      otherAnnualRetired: 240_000,
       children: [],
       sideIncomeAnnual: 0,
+      hasKousei: true,
+      pensionAnnual: presetPension(2_800_000, 65),
+      spouse: { ...DEFAULT_SETTINGS.spouse, enabled: false },
+    },
+  },
+  {
+    id: "single-owner",
+    label: "独身・持ち家",
+    description: "30歳・手取り300万・ローン月9万円（35年）",
+    patch: {
+      currentAge: 30,
+      retireAge: 65,
+      annualIncome: 3_000_000,
+      currentAssets: 1_000_000,
+      monthlyLiving: 90_000,
+      housingType: "持ち家",
+      monthlyHousing: 90_000,
+      housingEndAge: 65,
+      monthlyHousingMaintenance: 20_000,
+      monthlyLivingRetired: 90_000,
+      monthlyHousingRetired: 90_000,
+      otherAnnual: 240_000,
+      otherAnnualRetired: 240_000,
+      children: [],
+      sideIncomeAnnual: 0,
+      hasKousei: true,
+      pensionAnnual: presetPension(3_000_000, 65),
       spouse: { ...DEFAULT_SETTINGS.spouse, enabled: false },
     },
   },
   {
     id: "dinks",
     label: "共働きDINKs",
-    description: "夫婦+子なし・世帯900万",
+    description: "夫婦+子なし・世帯700万",
     patch: {
       currentAge: 32,
-      annualIncome: 5_500_000,
-      currentAssets: 5_000_000,
+      retireAge: 65,
+      annualIncome: 4_300_000,
+      currentAssets: 1_500_000,
       monthlyLiving: 280_000,
       housingType: "賃貸",
       monthlyHousing: 130_000,
-      monthlyLivingRetired: 240_000,
-      monthlyHousingRetired: 100_000,
+      monthlyLivingRetired: 260_000,
+      monthlyHousingRetired: 120_000,
       otherAnnual: 600_000,
+      otherAnnualRetired: 480_000,
       children: [],
       sideIncomeAnnual: 0,
+      hasKousei: true,
+      pensionAnnual: presetPension(4_300_000, 65),
       spouse: {
         ...DEFAULT_SETTINGS.spouse,
         enabled: true,
         marryAtSelfAge: 30,
         ageAtMarry: 30,
-        annualIncome: 3_500_000,
-        retireAge: 60,
-        pensionAnnual: 1_500_000,
+        annualIncome: 2_700_000,
+        retireAge: 65,
+        hasKousei: true,
+        pensionAnnual: presetPension(2_700_000, 65),
         pensionStartAge: 65,
       },
     },
@@ -384,17 +454,19 @@ const PRESETS: Preset[] = [
   {
     id: "child1",
     label: "子1人世帯",
-    description: "夫婦+子1人・公立中心",
+    description: "夫婦+子1人・世帯720万・公立中心",
     patch: {
       currentAge: 33,
-      annualIncome: 6_000_000,
-      currentAssets: 5_000_000,
+      retireAge: 65,
+      annualIncome: 4_800_000,
+      currentAssets: 1_500_000,
       monthlyLiving: 280_000,
       housingType: "賃貸",
       monthlyHousing: 130_000,
-      monthlyLivingRetired: 220_000,
+      monthlyLivingRetired: 200_000,
       monthlyHousingRetired: 100_000,
       otherAnnual: 500_000,
+      otherAnnualRetired: 400_000,
       children: [
         DEFAULT_CHILD(
           typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -405,67 +477,153 @@ const PRESETS: Preset[] = [
         ),
       ],
       sideIncomeAnnual: 0,
+      hasKousei: true,
+      pensionAnnual: presetPension(4_800_000, 65),
       spouse: {
         ...DEFAULT_SETTINGS.spouse,
         enabled: true,
         marryAtSelfAge: 30,
         ageAtMarry: 30,
-        annualIncome: 3_000_000,
-        retireAge: 60,
-        pensionAnnual: 1_400_000,
+        annualIncome: 2_400_000,
+        retireAge: 65,
+        hasKousei: true,
+        pensionAnnual: presetPension(2_400_000, 65),
         pensionStartAge: 65,
       },
     },
   },
   {
-    id: "mortgage",
-    label: "住宅ローンあり",
-    description: "持ち家・35年ローン",
+    id: "child2",
+    label: "子2人世帯",
+    description: "夫婦+子2人・持ち家・世帯860万",
     patch: {
-      currentAge: 35,
-      annualIncome: 6_500_000,
-      currentAssets: 6_000_000,
-      monthlyLiving: 250_000,
+      currentAge: 33,
+      retireAge: 65,
+      annualIncome: 5_600_000,
+      currentAssets: 2_000_000,
+      monthlyLiving: 320_000,
       housingType: "持ち家",
-      monthlyHousing: 110_000,
-      housingEndAge: 70,
-      monthlyLivingRetired: 200_000,
-      monthlyHousingRetired: 30_000,
-      otherAnnual: 400_000,
-      children: [],
+      monthlyHousing: 120_000,
+      housingEndAge: 67,
+      monthlyHousingMaintenance: 20_000,
+      monthlyLivingRetired: 240_000,
+      monthlyHousingRetired: 120_000,
+      otherAnnual: 600_000,
+      otherAnnualRetired: 480_000,
+      children: [
+        DEFAULT_CHILD(
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : "preset-child2-1",
+          "子1",
+          30
+        ),
+        DEFAULT_CHILD(
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : "preset-child2-2",
+          "子2",
+          33
+        ),
+      ],
       sideIncomeAnnual: 0,
+      hasKousei: true,
+      pensionAnnual: presetPension(5_600_000, 65),
+      spouse: {
+        ...DEFAULT_SETTINGS.spouse,
+        enabled: true,
+        marryAtSelfAge: 29,
+        ageAtMarry: 29,
+        annualIncome: 3_000_000,
+        retireAge: 65,
+        hasKousei: true,
+        pensionAnnual: presetPension(3_000_000, 65),
+        pensionStartAge: 65,
+      },
     },
   },
   {
     id: "side",
     label: "サイドFIRE",
-    description: "副業・事業収入を継続",
+    description: "35歳・55歳セミリタイア・副業180万を65歳まで継続",
     patch: {
       currentAge: 35,
-      retireAge: 50,
+      retireAge: 55,
       annualIncome: 6_000_000,
-      currentAssets: 10_000_000,
-      monthlyLiving: 200_000,
+      currentAssets: 5_000_000,
+      monthlyLiving: 180_000,
       housingType: "賃貸",
-      monthlyHousing: 90_000,
+      monthlyHousing: 75_000,
       monthlyLivingRetired: 180_000,
-      monthlyHousingRetired: 70_000,
-      otherAnnual: 300_000,
+      monthlyHousingRetired: 75_000,
+      otherAnnual: 240_000,
+      otherAnnualRetired: 240_000,
       sideIncomeAnnual: 1_800_000,
       sideIncomeUntilAge: 65,
       children: [],
+      hasKousei: true,
+      pensionAnnual: presetPension(6_000_000, 55),
     },
   },
 ];
 
-/** 国民年金の満額（令和6年度の老齢基礎年金満額 816,000円/年）40年加入、令和6年より。 */
-const KOKUMIN_NENKIN_FULL = 816_000;
-/** 厚生年金の報酬比例部分の保険料乘率（令和以降、5.481/1000を適用）。 */
-const KOUSEI_NENKIN_RATE = 5.481 / 1000;
-/** 厚生年金の平均標準報酬月額の上限（65万円）。 */
-const KOUSEI_NENKIN_MAX_MONTHLY = 650_000;
-/** 年収（手取り）から額面年収をザックリ推定する係数。 */
-const GROSS_FROM_NET_RATIO = 1.25;
+/**
+ * 退職所得に対する所得税・住民税・復興特別所得税の概算（円単位）。
+ * 退職所得控除（勤続20年以下: 40万×年数（最低80万）／20年超: 800万+70万×(年数-20)）
+ * を差し引いた額の1/2に累進税率（住民税10%・復興2.1%）を適用。
+ */
+function retirementIncomeTax(bonus: number, yearsWorked: number): number {
+  if (bonus <= 0) return 0;
+  const years = Math.max(1, Math.floor(yearsWorked));
+  const deduction =
+    years <= 20
+      ? Math.max(800_000, 400_000 * years)
+      : 8_000_000 + 700_000 * (years - 20);
+  const taxableBase = Math.max(0, (bonus - deduction) * 0.5);
+  let incomeTax = 0;
+  if (taxableBase <= 1_950_000) incomeTax = taxableBase * 0.05;
+  else if (taxableBase <= 3_300_000) incomeTax = taxableBase * 0.10 - 97_500;
+  else if (taxableBase <= 6_950_000) incomeTax = taxableBase * 0.20 - 427_500;
+  else if (taxableBase <= 9_000_000) incomeTax = taxableBase * 0.23 - 636_000;
+  else if (taxableBase <= 18_000_000) incomeTax = taxableBase * 0.33 - 1_536_000;
+  else if (taxableBase <= 40_000_000) incomeTax = taxableBase * 0.40 - 2_796_000;
+  else incomeTax = taxableBase * 0.45 - 4_796_000;
+  incomeTax = Math.max(0, incomeTax);
+  const reconstructionTax = incomeTax * 0.021;
+  const residentTax = taxableBase * 0.10;
+  return Math.round(incomeTax + reconstructionTax + residentTax);
+}
+
+function retirementBonusAfterTax(bonus: number, yearsWorked: number): number {
+  return Math.max(0, bonus - retirementIncomeTax(bonus, yearsWorked));
+}
+
+/**
+ * 期中平均（半年コンベンション）で運用益を計上する。
+ * 年初資産＋当年キャッシュフローの半分を当年平均運用残高とみなす。
+ * 平均残高が負（既に枯渇）の場合は運用益0。
+ */
+function midYearInvestmentGain(
+  startAssets: number,
+  netCashflow: number,
+  rate: number,
+): number {
+  const avg = startAssets + netCashflow * 0.5;
+  return avg > 0 ? avg * rate : 0;
+}
+
+/**
+ * 手取り年収から額面年収を逆算する係数。年収帯で社会保険料・所得税・住民税の負担率が変わるため、
+ * 段階的に係数を変えて概算する。
+ */
+function grossFromNetRatio(netAnnual: number): number {
+  if (netAnnual < 3_000_000) return 1.22;
+  if (netAnnual < 5_000_000) return 1.25;
+  if (netAnnual < 7_000_000) return 1.28;
+  if (netAnnual < 10_000_000) return 1.32;
+  if (netAnnual < 15_000_000) return 1.36;
+  return 1.40;
+}
 
 function estimateCompanyEmployeePensionBreakdown(
   annualIncomeNet: number,
@@ -477,6 +635,9 @@ function estimateCompanyEmployeePensionBreakdown(
   kouseiAnnual: number;
   totalAnnual: number;
   insuredMonths: number;
+  grossRatio: number;
+  grossAnnual: number;
+  monthlyAvg: number;
 } {
   // 国民皆年金を満額で納付する前提
   const kokuminAnnual = KOKUMIN_NENKIN_FULL;
@@ -485,7 +646,9 @@ function estimateCompanyEmployeePensionBreakdown(
   // 厚生年金は原則70歳未満まで加入を上限とする
   const insuredMonths = hasKousei ? Math.max(0, (Math.min(endAge, 70) - startAge) * 12) : 0;
 
-  const grossAnnual = Math.max(0, clampNumber(annualIncomeNet)) * GROSS_FROM_NET_RATIO;
+  const netAnnual = Math.max(0, clampNumber(annualIncomeNet));
+  const grossRatio = grossFromNetRatio(netAnnual);
+  const grossAnnual = netAnnual * grossRatio;
   const monthlyAvg = Math.min(grossAnnual / 12, KOUSEI_NENKIN_MAX_MONTHLY);
   const kouseiAnnual = hasKousei ? Math.max(0, monthlyAvg * KOUSEI_NENKIN_RATE * insuredMonths) : 0;
 
@@ -496,6 +659,9 @@ function estimateCompanyEmployeePensionBreakdown(
     kouseiAnnual,
     totalAnnual,
     insuredMonths,
+    grossRatio,
+    grossAnnual,
+    monthlyAvg,
   };
 }
 
@@ -615,6 +781,10 @@ function loadSettings(): FireSettings | null {
       ...DEFAULT_SETTINGS.spouse,
       ...(parsed.spouse ?? {}),
     };
+    // 旧スキーマ互換: リタイア後その他支出が未保存ならリタイア前の額を引き継ぐ
+    if (typeof parsed.otherAnnualRetired !== "number") {
+      merged.otherAnnualRetired = clampNumber(parsed.otherAnnual ?? DEFAULT_SETTINGS.otherAnnual);
+    }
     if (parsed.children) {
       merged.children = parsed.children.map((rawChild) => {
         const c = rawChild as Partial<Child> & { currentAge?: number; cramSchool?: boolean };
@@ -638,19 +808,27 @@ function loadSettings(): FireSettings | null {
             endAge,
           };
         });
+        const birthAtParentAge =
+          c.birthAtParentAge ??
+          // 旧スキーマからの推定: 親の現在年齢 - 子の現在年齢
+          (typeof c.currentAge === "number"
+            ? Math.max(0, (merged.currentAge ?? 30) - c.currentAge)
+            : 30);
+        const ageInputMode: ChildAgeInputMode =
+          c.ageInputMode === "birthPlan" || c.ageInputMode === "currentAge"
+            ? c.ageInputMode
+            : birthAtParentAge > (merged.currentAge ?? 30)
+              ? "birthPlan"
+              : "currentAge";
         return {
           id: c.id ?? crypto.randomUUID(),
           name: c.name ?? "子",
-          birthAtParentAge:
-            c.birthAtParentAge ??
-            // 旧スキーマからの推定: 親の現在年齢 - 子の現在年齢
-            (typeof c.currentAge === "number"
-              ? Math.max(0, (merged.currentAge ?? 30) - c.currentAge)
-              : 30),
+          birthAtParentAge,
+          ageInputMode,
           elementary: (c.elementary as SchoolType) ?? "公立",
-          juniorHigh: (c.juniorHigh as SchoolType) ?? "私立",
-          highSchool: (c.highSchool as HighSchoolType) ?? "私立",
-          university: (c.university as UniversityType) ?? "私立文系",
+          juniorHigh: (c.juniorHigh as SchoolType) ?? "公立",
+          highSchool: (c.highSchool as HighSchoolType) ?? "公立",
+          university: (c.university as UniversityType) ?? "国公立",
           graduate: (c.graduate as GraduateType) ?? "進学しない",
           cramStages: c.cramStages ?? {
             // 旧 cramSchool=true は「小4以降通塾」相当だったので移行
@@ -697,6 +875,8 @@ interface YearRow {
 interface SimulationResult {
   rows: YearRow[];
   fireAge: number | null;
+  /** FIRE達成年時点での資産値（グラフ上の黄色点線とFIRE軸の交点になる）。未達成ならnull。 */
+  fireThresholdAssets: number | null;
   assetsAtRetirement: number;
   requiredAssetsAtRetirement: number;
   depletionAge: number | null;
@@ -753,27 +933,175 @@ function simulate(s: FireSettings): SimulationResult {
 
   const baseLiving = clampNumber(s.monthlyLiving) * 12;
   const baseHousing = clampNumber(s.monthlyHousing) * 12;
+  const baseHousingMaintenance = clampNumber(s.monthlyHousingMaintenance) * 12;
   const baseLivingRetired = clampNumber(s.monthlyLivingRetired) * 12;
   const baseHousingRetired = clampNumber(s.monthlyHousingRetired) * 12;
   const baseOther = clampNumber(s.otherAnnual);
+  const baseOtherRetired = clampNumber(s.otherAnnualRetired);
+  const sideIncomeAnnual = clampNumber(s.sideIncomeAnnual);
+  const sideIncomeUntilAge = Math.floor(clampNumber(s.sideIncomeUntilAge, lifeAge));
+  const withdrawalRate = clampNumber(s.withdrawalPercent) / 100;
   const housingType = s.housingType ?? "賃貸";
+  // 賃貸の家賃は常に名目固定（インフレ非適用）。持ち家は従来どおりインフレ反映。
+  const applyHousingInflation = housingType === "持ち家";
   const housingEndAge =
     housingType === "持ち家"
       ? Math.floor(clampNumber(s.housingEndAge, 200))
       : lifeAge;
 
-  const retireExpenseTodayValue = baseLivingRetired + baseHousingRetired + baseOther;
-  // リタイア時点（retireAge）に必要な名目資産額を事前計算。
-  // これをグラフのオレンジ水平線・FIRE達成判定の両方で共通に使うことで、
-  // 「資産推移グラフがこの線を上回った時点 = FIRE」に揃える。
+  // 持ち家はリタイア後の住居費は維持費のみ。賃貸は入力されたリタイア後の家賃。
+  const baseHousingRetiredEffective =
+    housingType === "持ち家" ? baseHousingMaintenance : baseHousingRetired;
+  const retireExpenseTodayValue = baseLivingRetired + baseHousingRetiredEffective + baseOtherRetired;
+  // リタイア時点の必要資産は、グラフの目安線とリタイア時予測資産の比較に使う。
+  // FIRE達成年齢は希望リタイア年齢に引きずられないよう、各年時点の必要資産で判定する。
   const yearsToRetireForCalc = Math.max(0, retirementExpenseStartAge - currentAge);
-  const fireTarget =
+  const requiredAssetsAtRetirementTarget =
     retireExpenseTodayValue * Math.pow(1 + inf, yearsToRetireForCalc) * 25;
 
-  let fireAge: number | null = null;
+  const projectedFireAge = (() => {
+    let projectedAssets = assets;
+
+    const childTotalCostAtAge = (age: number, inflFactor: number) => {
+      let total = 0;
+      for (const child of s.children) {
+        const childAge = age - child.birthAtParentAge;
+        if (childAge < 0) continue;
+        const cost = childYearlyCost(child, childAge);
+        const lessons = childLessonsYearlyCost(child, childAge);
+        total +=
+          (cost.tuition +
+            cost.cram +
+            cost.entrance +
+            childLivingYearlyCost(child, childAge) +
+            lessons.total) *
+          inflFactor;
+      }
+      return total;
+    };
+
+    const spouseCashflowAtAge = (age: number, yearsFromNow: number) => {
+      let spouseYearIncome = 0;
+      let spouseYearPension = 0;
+
+      if (spouseEnabled && age >= spouseMarryAtSelfAge) {
+        const spouseAge = spouseAgeAtMarry + (age - spouseMarryAtSelfAge);
+        if (spouseAge < spouseRetireAge) {
+          spouseYearIncome += spouseIncome * growthFactor(
+            sp.applyAnnualIncomeGrowth,
+            sp.annualIncomeGrowthRate,
+            yearsFromNow,
+          );
+        }
+        if (spouseAge >= spousePensionStartAge) {
+          spouseYearPension += spousePension;
+        }
+      }
+
+      return { spouseYearIncome, spouseYearPension };
+    };
+
+    const sideIncomeAtAge = (age: number, yearsFromNow: number) =>
+      sideIncomeAnnual > 0 && age <= sideIncomeUntilAge
+        ? sideIncomeAnnual * growthFactor(
+          s.applySideIncomeGrowth,
+          s.sideIncomeGrowthRate,
+          yearsFromNow,
+        )
+        : 0;
+
+    const assetsLastAfterFire = (fireStartAge: number, startingAssets: number) => {
+      let retirementAssets = startingAssets;
+      const candidateRetirementExpenseStartAge =
+        s.retirementExpenseTiming === "allRetired" && spouseEnabled
+          ? Math.max(fireStartAge, spouseRetireSelfAge)
+          : fireStartAge;
+
+      for (let age = fireStartAge; age <= lifeAge; age++) {
+        const yearsFromNow = age - currentAge;
+        const inflFactor = Math.pow(1 + inf, yearsFromNow);
+        const usesRetiredExpense = age >= candidateRetirementExpenseStartAge;
+        const spouseCashflow = spouseCashflowAtAge(age, yearsFromNow);
+        const yearSide = sideIncomeAtAge(age, yearsFromNow);
+        let yearIncome = yearSide + spouseCashflow.spouseYearIncome;
+        let yearPension =
+          (age >= pensionStartAge ? pension : 0) + spouseCashflow.spouseYearPension;
+        const living =
+          (usesRetiredExpense ? baseLivingRetired : baseLiving) * inflFactor;
+        const housing = (() => {
+          if (housingType === "持ち家") {
+            if (usesRetiredExpense) return baseHousingMaintenance * inflFactor;
+            return age <= housingEndAge
+              ? baseHousing * inflFactor
+              : baseHousingMaintenance * inflFactor;
+          }
+          return usesRetiredExpense ? baseHousingRetired : baseHousing;
+        })();
+        const other = (usesRetiredExpense ? baseOtherRetired : baseOther) * inflFactor;
+        const childrenCost = childTotalCostAtAge(age, inflFactor);
+        let yearExpense = living + housing + other + childrenCost;
+
+        if (usesRetiredExpense && s.withdrawalMode === "percent") {
+          const targetSpend = Math.max(0, retirementAssets * withdrawalRate);
+          const offset = yearSide + yearPension;
+          const withdrawalAmount = Math.max(0, targetSpend - offset);
+          yearExpense = withdrawalAmount + childrenCost;
+          yearIncome = 0;
+          yearPension = 0;
+        }
+
+        const netCashflow = yearIncome + yearPension - yearExpense;
+        const investmentGain = midYearInvestmentGain(retirementAssets, netCashflow, rRet);
+        retirementAssets = retirementAssets + netCashflow + investmentGain;
+
+        if (retirementAssets <= 0) return false;
+      }
+
+      return retirementAssets > 0;
+    };
+
+    for (let age = currentAge; age < retireAge; age++) {
+      if (assetsLastAfterFire(age, projectedAssets)) {
+        return age;
+      }
+
+      const yearsFromNow = age - currentAge;
+      const inflFactor = Math.pow(1 + inf, yearsFromNow);
+
+      let projectedIncome = income * growthFactor(
+        s.applyAnnualIncomeGrowth,
+        s.annualIncomeGrowthRate,
+        yearsFromNow,
+      );
+      const spouseCashflow = spouseCashflowAtAge(age, yearsFromNow);
+      projectedIncome += spouseCashflow.spouseYearIncome;
+      const projectedChildrenCost = childTotalCostAtAge(age, inflFactor);
+
+      const projectedLiving = baseLiving * inflFactor;
+      const projectedHousing =
+        age <= housingEndAge
+          ? baseHousing * (applyHousingInflation ? inflFactor : 1)
+          : (housingType === "持ち家" ? baseHousingMaintenance * inflFactor : 0);
+      const projectedOther = baseOther * inflFactor;
+      const projectedNetCashflow =
+        projectedIncome -
+        (projectedLiving + projectedHousing + projectedOther + projectedChildrenCost);
+      const projectedInvestmentGain = midYearInvestmentGain(
+        projectedAssets,
+        projectedNetCashflow,
+        r,
+      );
+      projectedAssets = projectedAssets + projectedNetCashflow + projectedInvestmentGain;
+
+    }
+
+    return null;
+  })();
+
+  const fireAge: number | null = projectedFireAge;
   let depletionAge: number | null = null;
   let assetsAtRetirement = assets;
-  let requiredAssetsAtRetirement = fireTarget;
+  let requiredAssetsAtRetirement = requiredAssetsAtRetirementTarget;
   let peakAssets = assets;
 
   for (let age = currentAge; age <= lifeAge; age++) {
@@ -797,22 +1125,27 @@ function simulate(s: FireSettings): SimulationResult {
       yearPension = pension;
     }
 
-    // 退職金はリタイア年齢で一度だけ計上（任意）
+    // 退職金はリタイア年齢で一度だけ計上（任意）。入力は额面前提で、退職所得控除と累進税を適用した手取りを計上する。
+    let yearRetirementBonus = 0;
     if (age === retireAge && retirementBonus > 0) {
-      yearIncome += retirementBonus;
+      const yearsWorked = Math.max(1, retireAge - Math.floor(clampNumber(s.pensionWorkStartAge, 22)));
+      yearRetirementBonus = retirementBonusAfterTax(retirementBonus, yearsWorked);
+      yearIncome += yearRetirementBonus;
     }
 
     // サイドFIRE: リタイア後の継続収入（必要に応じて個別上昇率を適用）
+    let yearSideIncome = 0;
     if (
       phase === "retirement" &&
-      clampNumber(s.sideIncomeAnnual) > 0 &&
-      age <= clampNumber(s.sideIncomeUntilAge, lifeAge)
+      sideIncomeAnnual > 0 &&
+      age <= sideIncomeUntilAge
     ) {
-      yearIncome += clampNumber(s.sideIncomeAnnual) * growthFactor(
+      yearSideIncome = sideIncomeAnnual * growthFactor(
         s.applySideIncomeGrowth,
         s.sideIncomeGrowthRate,
         yearsFromNow,
       );
+      yearIncome += yearSideIncome;
     }
 
     // 配偶者の収入・年金（結婚成立後のみ反映）
@@ -833,11 +1166,16 @@ function simulate(s: FireSettings): SimulationResult {
 
     const living =
       (usesRetiredExpense ? baseLivingRetired : baseLiving) * inflFactor;
-    const housing =
-      age <= housingEndAge
-        ? (usesRetiredExpense ? baseHousingRetired : baseHousing) * inflFactor
-        : 0;
-    const other = baseOther * inflFactor;
+    const housing = (() => {
+      if (housingType === "持ち家") {
+        if (usesRetiredExpense) return baseHousingMaintenance * inflFactor;
+        return age <= housingEndAge
+          ? baseHousing * inflFactor
+          : baseHousingMaintenance * inflFactor;
+      }
+      return usesRetiredExpense ? baseHousingRetired : baseHousing;
+    })();
+    const other = (usesRetiredExpense ? baseOtherRetired : baseOther) * inflFactor;
 
     let childrenCost = 0;
     let childEducationCost = 0;
@@ -873,21 +1211,22 @@ function simulate(s: FireSettings): SimulationResult {
     let yearExpense = living + housing + other + childrenCost;
     let withdrawalAmount = 0;
     if (phase === "retirement" && usesRetiredExpense && s.withdrawalMode === "percent") {
-      // 資産の ○% を取り崩し。4%ルールなど。
-      // 取り崩し額は生活費・住居費・その他をカバーするその期の資産代理コストとして扱う。
-      withdrawalAmount = Math.max(
-        0,
-        assets * (clampNumber(s.withdrawalPercent) / 100),
-      );
+      // 資産の ○% を生活費・住居費・その他の取り崩し目標額とし、
+      // 年金・サイド収入で補える分は取り崩しを減らす（4%ルールの快適スピンダウン考え方）。
+      // 退職金は一時金なので取り崩し相殺には含めず、そのまま資産に加算される。
+      const targetSpend = Math.max(0, assets * withdrawalRate);
+      const offset = yearSideIncome + yearPension;
+      withdrawalAmount = Math.max(0, targetSpend - offset);
       yearExpense = withdrawalAmount + childrenCost;
+      // 相殺に使った収入は資産に辻さず、取り崩しをその分減らした扱いにする。
+      yearIncome = yearRetirementBonus;
+      yearPension = 0;
     }
 
     const netCashflow = yearIncome + yearPension - yearExpense;
     const rate = phase === "accumulation" ? r : rRet;
-    const baseAfterCashflow = assets + netCashflow;
-    const investmentGain =
-      baseAfterCashflow > 0 ? baseAfterCashflow * rate : 0;
-    const endAssets = baseAfterCashflow + investmentGain;
+    const investmentGain = midYearInvestmentGain(assets, netCashflow, rate);
+    const endAssets = assets + netCashflow + investmentGain;
 
     rows.push({
       age,
@@ -913,19 +1252,9 @@ function simulate(s: FireSettings): SimulationResult {
       endAssets,
     });
 
-    const retireExpenseNominalNow = retireExpenseTodayValue * inflFactor;
-    void retireExpenseNominalNow;
-    if (
-      fireAge === null &&
-      fireTarget > 0 &&
-      endAssets >= fireTarget
-    ) {
-      fireAge = age;
-    }
-
     if (age === retireAge - 1) {
       assetsAtRetirement = endAssets;
-      requiredAssetsAtRetirement = fireTarget;
+      requiredAssetsAtRetirement = requiredAssetsAtRetirementTarget;
     }
 
     if (depletionAge === null && endAssets <= 0 && phase === "retirement") {
@@ -939,10 +1268,15 @@ function simulate(s: FireSettings): SimulationResult {
 
   const lastRow = rows[rows.length - 1];
   const lastsToLifeAge = !!lastRow && lastRow.endAssets > 0;
+  const fireThresholdAssets =
+    fireAge !== null
+      ? rows[fireAge - currentAge]?.endAssets ?? null
+      : null;
 
   return {
     rows,
     fireAge,
+    fireThresholdAssets,
     assetsAtRetirement,
     requiredAssetsAtRetirement,
     depletionAge,
@@ -993,6 +1327,7 @@ export default function ForecastPage() {
   );
   const [hydrated, setHydrated] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // 1) URLハッシュ（#s=...）優先で読み込み（共有リンク経由）
@@ -1069,38 +1404,51 @@ export default function ForecastPage() {
     // appliedSettings は null に戻して、グラフはプレビュー（サンプル）状態へ
     setAppliedSettings(null);
     setShareCopied(false);
+    setShareUrl(null);
   }
 
   function shareURL() {
-    if (typeof window === "undefined" || !appliedSettings || !result) return;
-    const hash = encodeSettingsToHash(appliedSettings);
+    if (typeof window === "undefined" || !inputsValid) return;
+    const settingsToShare = settings;
+    const hash = encodeSettingsToHash(settingsToShare);
     const url = `${window.location.origin}${window.location.pathname}#s=${hash}`;
+    setAppliedSettings(settingsToShare);
+    setShareUrl(url);
+    setShareCopied(false);
     // URLバーも更新
     try {
       window.history.replaceState(null, "", `#s=${hash}`);
     } catch {
       /* noop */
     }
-    const copy = async () => {
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(url);
-          setShareCopied(true);
-          window.setTimeout(() => setShareCopied(false), 2000);
-          return;
-        }
-      } catch {
-        /* fallback below */
-      }
-      // フォールバック: prompt で表示
-      window.prompt("このURLをコピーして保存・共有できます", url);
-    };
-    void copy();
   }
 
-  function printPDF() {
-    if (typeof window === "undefined") return;
-    window.print();
+  function closeShareDialog() {
+    setShareUrl(null);
+    setShareCopied(false);
+  }
+
+  async function copyShareURL() {
+    if (!shareUrl || typeof window === "undefined") return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        return;
+      }
+    } catch {
+      /* fallback below */
+    }
+    window.prompt("このURLをコピーして保存・共有できます", shareUrl);
+    setShareCopied(true);
+  }
+
+  function applyPreset(p: Preset) {
+    const next = { ...DEFAULT_SETTINGS, ...p.patch } as FireSettings;
+    setSettings(next);
+    setAppliedSettings(next);
+    setShareCopied(false);
+    setShareUrl(null);
   }
 
   const inputsValid =
@@ -1150,37 +1498,84 @@ export default function ForecastPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <header className="flex items-end justify-between flex-wrap gap-4 pb-6 border-b border-zinc-200">
-        <div>
-          <div className="inline-flex items-center gap-2 text-[11px] text-zinc-500 mb-3 tracking-widest uppercase">
-            <span className="w-1 h-1 rounded-full bg-zinc-900" />
-            FIRE Simulator
+      {shareUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 px-4 py-6 no-print"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-url-dialog-title"
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="share-url-dialog-title" className="text-base font-semibold text-zinc-900">
+                  URLで保存
+                </h2>
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                  現在の入力内容をこのURLに保存しました。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeShareDialog}
+                className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+              >
+                閉じる
+              </button>
+            </div>
+
+            <label className="mt-5 block text-xs font-medium text-zinc-700" htmlFor="share-url-value">
+              保存用URL
+            </label>
+            <textarea
+              id="share-url-value"
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              className="mt-2 h-28 w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs leading-relaxed text-zinc-700 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/5"
+            />
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={copyShareURL}
+                className="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800"
+              >
+                {shareCopied ? "コピーしました" : "URLをコピー"}
+              </button>
+            </div>
+
+            <AdSlot slot="0000000001" className="mb-0" />
           </div>
-          <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900">
-            ライフプラン<span className="text-zinc-400">シミュレーター</span>
-          </h1>
-          <p className="text-zinc-500 mt-2 text-sm">
-            支出の内訳・子供費・住居費を細かく入力して、生涯の資産推移を可視化
-          </p>
         </div>
-        <div className="flex items-center gap-2 no-print">
-          <button
-            onClick={printPDF}
-            disabled={!inputsValid || !result}
-            className="text-xs text-zinc-700 bg-white hover:bg-zinc-50 disabled:text-zinc-300 disabled:cursor-not-allowed px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors inline-flex items-center gap-1.5"
-            type="button"
-            title="グラフ・年次明細を含むページをPDFとして印刷します"
-          >
-            <span aria-hidden>🖨️</span>
-            PDF出力
-          </button>
+      )}
+
+      {/* Header */}
+      <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-100/70 px-6 py-6 lg:px-8 lg:py-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-zinc-900/[0.04]" aria-hidden />
+        <div className="pointer-events-none absolute -left-14 -bottom-14 w-44 h-44 rounded-full bg-zinc-400/[0.08]" aria-hidden />
+        <div className="relative flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 text-[11px] text-zinc-500 mb-3 tracking-[0.18em] uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-900" />
+              Life Planner
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900">
+              ライフプラン資産シミュレーター
+            </h1>
+            <p className="text-zinc-600 mt-2 text-sm leading-relaxed max-w-2xl">
+              収入・生活費・教育費・住居費を入力すると、将来の資産推移と必要資金の目安をすぐに確認できます。
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end" />
+        </div>
+        <div className="relative z-10 flex items-center gap-2 no-print">
           <button
             onClick={shareURL}
-            disabled={!inputsValid || !result}
+            disabled={!inputsValid}
             className="text-xs text-zinc-700 bg-white hover:bg-zinc-50 disabled:text-zinc-300 disabled:cursor-not-allowed px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors inline-flex items-center gap-1.5"
             type="button"
-            title="現在の入力内容を含む共有URLをクリップボードにコピーします"
+            title="現在の入力内容をURLに保存してクリップボードにコピーします"
           >
             <span aria-hidden>{shareCopied ? "✓" : "🔗"}</span>
             {shareCopied ? "URLをコピーしました" : "URLで保存"}
@@ -1218,9 +1613,7 @@ export default function ForecastPage() {
             <button
               key={p.id}
               type="button"
-              onClick={() => {
-                setSettings((prev) => ({ ...prev, ...p.patch } as FireSettings));
-              }}
+              onClick={() => applyPreset(p)}
               className="text-left px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-900 hover:bg-zinc-50 transition-colors"
             >
               <div className="text-xs font-medium text-zinc-900">{p.label}</div>
@@ -1258,21 +1651,12 @@ export default function ForecastPage() {
           <SummaryCard
             label="リタイア時の予測資産"
             value={formatCompactJPY(Math.round(result.assetsAtRetirement)) + "円"}
-            sub={(() => {
-              const need = Math.round(result.requiredAssetsAtRetirement);
-              const have = Math.round(result.assetsAtRetirement);
-              if (have >= need) {
-                const surplus = have - need;
-                return `必要 ${formatCompactJPY(need)}円 / 余裕 +${formatCompactJPY(surplus)}円`;
-              }
-              const gap = need - have;
-              return `必要 ${formatCompactJPY(need)}円 / 不足 -${formatCompactJPY(gap)}円`;
-            })()}
             tone={
               result.assetsAtRetirement >= result.requiredAssetsAtRetirement
                 ? "green"
                 : "orange"
             }
+            tooltip="希望リタイア時点の必要資産を上回るかで色を変えています"
           />
           <SummaryCard
             label="FIRE 達成"
@@ -1283,6 +1667,8 @@ export default function ForecastPage() {
                 : "前提条件では達成不可"
             }
             tone={result.fireAge !== null ? "purple" : "gray"}
+            href="#fire-definition"
+            tooltip="サイド収入・年金・配偶者収入を含め、FIRE後に資産が想定寿命まで持つ最初の年齢です"
           />
           <SummaryCard
             label="資産寿命"
@@ -1311,6 +1697,18 @@ export default function ForecastPage() {
             pensionStartAge={appliedSettings.pensionStartAge}
             depletionAge={result.depletionAge}
             requiredAtRetirement={result.requiredAssetsAtRetirement}
+            fireThresholdAssets={result.fireThresholdAssets}
+          />
+        </div>
+      )}
+
+      {/* Expense breakdown chart */}
+      {inputsValid && result && appliedSettings && result.rows.length > 0 && (
+        <div className="print-avoid-break">
+          <ExpenseChart
+            rows={result.rows}
+            retireAge={appliedSettings.retireAge}
+            spouseEnabled={appliedSettings.spouse.enabled}
           />
         </div>
       )}
@@ -1320,42 +1718,16 @@ export default function ForecastPage() {
         <div className="no-print"><ImprovementActions settings={appliedSettings} result={result} /></div>
       )}
 
-      {/* 税・社会保険コストの注意（結果近くに目立たせる） */}
-      {inputsValid && result && appliedSettings && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:p-6">
-          <div className="flex items-start gap-3">
-            <span aria-hidden className="text-xl leading-none mt-0.5">⚠️</span>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-amber-900 mb-1.5">
-                税・社会保険コストは別建てで考慮してください
-              </h3>
-              <p className="text-xs text-amber-900/90 leading-relaxed">
-                本シミュレーターの計算には<strong>所得税・住民税・健康保険料・国民年金保険料</strong>を含めていません。
-                FIRE後は会社員時代と異なり、健康保険料（国民健康保険）と住民税・国民年金で
-                <strong>年100〜150万円</strong>程度の現金支出が発生するケースが多いため、
-                リタイア後の生活費にこの分を上乗せして試算するか、別途「その他」に追加で計上することを推奨します。
-              </p>
-              <Link
-                href="/articles/post-fire-tax"
-                className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-amber-900 hover:text-amber-700 underline underline-offset-2"
-              >
-                FIRE後の落とし穴：健保・住民税・年金の真実 →
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
       {!result && inputsValid && (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7 relative">
-          {/* 実際のチャートと同じカード/ヘッダー構造 */}
-          <div className="flex items-start justify-between flex-wrap gap-2 mb-5">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7 relative overflow-hidden">
+          {/* 資産推移（サンプル） */}
+          <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
             <div>
               <h3 className="text-base font-semibold text-zinc-400">
                 資産推移
                 <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-medium text-zinc-500 align-middle">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  プレビュー
+                  サンプル
                 </span>
               </h3>
               <p className="text-xs text-zinc-400 mt-1">
@@ -1363,7 +1735,7 @@ export default function ForecastPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
-              <Legend dotClass="bg-zinc-400" label="資産推移" />
+              <Legend dotClass="bg-zinc-900" label="資産推移" />
               <Legend dotClass="bg-amber-400" label="リタイア" />
               <Legend dotClass="bg-violet-400" label="FIRE" />
               <Legend dotClass="bg-emerald-400" label="年金開始" />
@@ -1422,7 +1794,7 @@ export default function ForecastPage() {
               <polyline
                 points="70,300 130,290 200,270 280,235 360,195 440,155 520,120 580,100 620,95 700,130 780,175 860,220 920,260 976,290"
                 fill="none"
-                stroke="#a1a1aa"
+                stroke="#18181b"
                 strokeWidth="1.75"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -1480,20 +1852,129 @@ export default function ForecastPage() {
                 </text>
               ))}
             </svg>
+          </div>
 
-            {/* 中央の案内 */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
-              <div className="bg-white/90 backdrop-blur-sm border border-zinc-200 rounded-xl px-5 py-4 shadow-sm text-center max-w-sm">
-                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-medium text-emerald-700 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  完全無料・メールアドレス登録不要
-                </div>
-                <p className="text-xs text-zinc-600 leading-relaxed">
-                  下にスクロールして各項目を入力し、最後の<br className="hidden sm:block" />
-                  <span className="font-medium text-zinc-800">「計算する」</span>ボタンを押すと、<br />
-                  あなたの入力値に基づいたグラフが表示されます。
+          {/* 収入と支出の推移（プレビュー） */}
+          <div className="mt-8 pt-6 border-t border-zinc-100">
+            <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-zinc-400">
+                  収入と支出の推移
+                  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-medium text-zinc-500 align-middle">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    サンプル
+                  </span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-1">
+                  年間収入（実線）と支出（積み上げ）/ 横軸: 年齢
                 </p>
               </div>
+              <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
+                <Legend dotClass="" colorHex="#18181b" label={settings.spouse.enabled ? "収入（本人＋配偶者）" : "収入"} />
+                <Legend dotClass="" colorHex="#3b82f6" label="生活費" />
+                <Legend dotClass="" colorHex="#10b981" label="住居費" />
+                <Legend dotClass="" colorHex="#f59e0b" label="その他" />
+              </div>
+            </div>
+
+            <div className="relative">
+              <svg
+                viewBox="0 0 1000 320"
+                className="w-full h-auto"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                {/* Y grid + labels */}
+                {[24, 95, 166, 237, 284].map((yPos, i) => (
+                  <g key={i}>
+                    <line
+                      x1={70}
+                      x2={976}
+                      y1={yPos}
+                      y2={yPos}
+                      stroke="#f4f4f5"
+                      strokeDasharray="2 3"
+                    />
+                    <text x={62} y={yPos + 4} fontSize="10" fill="#d4d4d8" textAnchor="end">
+                      {["1000万円", "750万円", "500万円", "250万円", "0円"][i]}
+                    </text>
+                  </g>
+                ))}
+
+                {/* リタイア後背景バンド */}
+                <rect x={620} y={24} width={356} height={260} fill="#fafafa" />
+
+                {/* 積み上げエリア（下から: 生活費 → 住居費 → その他） */}
+                {/* 生活費 */}
+                <path
+                  d="M 70 220 L 200 215 L 360 210 L 520 205 L 620 205 L 760 215 L 900 220 L 976 222 L 976 284 L 70 284 Z"
+                  fill="#3b82f6"
+                  fillOpacity="0.7"
+                />
+                {/* 住居費 */}
+                <path
+                  d="M 70 175 L 200 172 L 360 168 L 520 165 L 620 168 L 760 195 L 900 220 L 976 222 L 976 222 L 900 220 L 760 215 L 620 205 L 520 205 L 360 210 L 200 215 L 70 220 Z"
+                  fill="#10b981"
+                  fillOpacity="0.7"
+                />
+                {/* その他 */}
+                <path
+                  d="M 70 150 L 200 148 L 360 145 L 520 142 L 620 148 L 760 178 L 900 205 L 976 210 L 976 222 L 900 220 L 760 195 L 620 168 L 520 165 L 360 168 L 200 172 L 70 175 Z"
+                  fill="#f59e0b"
+                  fillOpacity="0.7"
+                />
+
+                {/* 収入線（リタイアにかけて0へ滑らかに） */}
+                <polyline
+                  points="70,95 200,80 360,60 520,52 600,55 620,95 640,180 680,255 720,284 976,284"
+                  fill="none"
+                  stroke="#18181b"
+                  strokeWidth="1.75"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+
+                {/* リタイア縦線 */}
+                <line x1={620} x2={620} y1={24} y2={284} stroke="#fbbf24" strokeOpacity="0.35" strokeDasharray="3 3" strokeWidth="1" />
+                <text x={620} y={36} fontSize="10" fill="#d97706" textAnchor="middle" fontWeight="600" opacity="0.7">
+                  リタイア
+                </text>
+
+                {/* X 軸ラベル */}
+                {[
+                  { x: 70, label: "30" },
+                  { x: 250, label: "40" },
+                  { x: 440, label: "50" },
+                  { x: 620, label: "60" },
+                  { x: 800, label: "70" },
+                  { x: 976, label: "85" },
+                ].map((t, i) => (
+                  <text key={i} x={t.x} y={308} fontSize="10" fill="#d4d4d8" textAnchor="middle">
+                    {t.label}
+                  </text>
+                ))}
+              </svg>
+            </div>
+          </div>
+
+          {/* グレー半透明オーバーレイ（チャート全体をサンプル化） */}
+          <div className="absolute inset-0 bg-zinc-200/35 backdrop-blur-[1px] pointer-events-none rounded-2xl" />
+
+          {/* 中央オーバーレイ案内 */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+            <div className="bg-white/95 backdrop-blur-sm border border-emerald-200 rounded-xl px-5 py-4 shadow-lg text-center max-w-md">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-700 mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                完全無料・メールアドレス登録不要
+              </div>
+              <p className="text-sm text-zinc-700 leading-relaxed">
+                下にスクロールして各項目を入力し、
+                <span className="font-semibold text-zinc-900">「計算する」</span>
+                ボタンを押すと、資産推移と収入・支出の推移グラフが表示されます。
+              </p>
+              <p className="mt-2 text-[11px] text-zinc-500">
+                ※ 下のグラフは表示イメージのサンプルです。あなたの計算結果ではありません。
+              </p>
             </div>
           </div>
         </div>
@@ -1518,6 +1999,7 @@ export default function ForecastPage() {
               label="現在の総資産"
               unit="万円"
               value={settings.currentAssets}
+              min={0}
               scale={10000}
               step={10}
               onChange={(v) => update("currentAssets", v)}
@@ -1526,6 +2008,7 @@ export default function ForecastPage() {
               label="年収（手取り）"
               unit="万円"
               value={settings.annualIncome}
+              min={0}
               scale={10000}
               step={10}
               onChange={(v) => update("annualIncome", v)}
@@ -1585,10 +2068,11 @@ export default function ForecastPage() {
               label="退職金（一時金・任意）"
               unit="万円"
               value={settings.retirementBonus}
+              min={0}
               scale={10000}
               step={50}
               onChange={(v) => update("retirementBonus", Math.max(0, v))}
-              hint="リタイア年齢の年に一度だけ収入として計上（0なら未使用）"
+              hint="額面を入力。退職所得控除と累進税を適用した手取りをリタイア年に計上"
             />
           </Grid>
         </SubSection>
@@ -1600,6 +2084,7 @@ export default function ForecastPage() {
               label="年金（年額・受給見込み）"
               unit="万円"
               value={settings.pensionAnnual}
+              min={0}
               scale={10000}
               step={10}
               onChange={(v) => update("pensionAnnual", v)}
@@ -1607,10 +2092,9 @@ export default function ForecastPage() {
                 const estMan = Math.round(companyPensionEst.totalAnnual / 10000);
                 const insuredYears = Math.floor(companyPensionEst.insuredMonths / 12);
                 return [
-                  `※ デフォルトは月10万円（年120万円）です。`,
-                  `※ 会社員想定の自動推定を使う場合: 勤務開始 ${settings.pensionWorkStartAge}歳 / リタイア ${settings.retireAge}歳 / 厚生加入 約${insuredYears}年 で 約 ${estMan}万円/年。`,
-                  `内訳：国民年金は満額（816,000円/年）固定 + 厚生年金（手取り年収×1.25→標準報酬月額→5.481/1000×加入月数）。`,
-                  `出典：日本年金機構「老齢厚生年金の計算式」、厚生労働省「令和6年度の年金額改定」。`,
+                  `※ デフォルトは国民年金（老齢基礎年金）満額 月70,608円（年847,296円）です。`,
+                  `※ 厚生年金に加入していた場合は下のチェックで概算を上乗せできます。`,
+                  `出典：日本年金機構「令和8年度の年金額」（令和8年4月分から適用）。`,
                 ].join("\n");
               })()}
             />
@@ -1623,65 +2107,74 @@ export default function ForecastPage() {
               onChange={(v) => update("pensionStartAge", v)}
             />
           </Grid>
-          <details className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3">
-            <summary className="cursor-pointer text-sm font-medium text-zinc-700">
-              詳細設定
-            </summary>
-            <div className="mt-4 space-y-4">
-              <label className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={settings.hasKousei}
-                  onChange={(e) => update("hasKousei", e.target.checked)}
-                  className="w-4 h-4"
-                />
-                厚生年金に加入している（会社員・公務員など）
-              </label>
-              <Grid cols={2}>
-                <NumberField
-                  label="仕事の開始年齢"
-                  unit="歳"
-                  value={settings.pensionWorkStartAge}
-                  min={15}
-                  max={settings.retireAge}
-                  onChange={(v) =>
-                    update(
-                      "pensionWorkStartAge",
-                      Math.min(settings.retireAge, Math.max(15, v))
-                    )
-                  }
-                />
-                <div className="hidden md:block" />
-              </Grid>
 
-              <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3 text-xs text-zinc-600 space-y-1.5">
-                <p>
-                  国民年金（満額想定）: {formatCurrency(Math.round(companyPensionEst.kokuminAnnual / 12))}/月
-                </p>
-                <p>
-                  厚生年金（推定）: {settings.hasKousei
-                    ? `${formatCurrency(Math.round(companyPensionEst.kouseiAnnual / 12))}/月（加入 ${Math.floor(companyPensionEst.insuredMonths / 12)}年）`
-                    : "加入なし（0円）"}
-                </p>
-                <p className="font-medium text-zinc-800 pt-1 border-t border-zinc-100">
-                  合計推定: {formatCurrency(Math.round((companyPensionEst.kokuminAnnual + companyPensionEst.kouseiAnnual) / 12))}/月
-                  （年額 {formatCurrency(Math.round(companyPensionEst.totalAnnual))}）
-                </p>
+          <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3">
+            <label className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={settings.hasKousei}
+                onChange={(e) => update("hasKousei", e.target.checked)}
+                className="w-4 h-4"
+              />
+              厚生年金に加入している（会社員・公務員など）
+            </label>
+
+            {settings.hasKousei && (
+              <div className="mt-4 space-y-4">
+                <Grid cols={2}>
+                  <NumberField
+                    label="仕事の開始年齢"
+                    unit="歳"
+                    value={settings.pensionWorkStartAge}
+                    min={15}
+                    max={settings.retireAge}
+                    onChange={(v) =>
+                      update(
+                        "pensionWorkStartAge",
+                        Math.min(settings.retireAge, Math.max(15, v))
+                      )
+                    }
+                  />
+                  <div className="hidden md:block" />
+                </Grid>
+
+                <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3 text-xs text-zinc-600 space-y-1.5">
+                  <p>
+                    国民年金（満額想定）: {formatCurrency(Math.round(companyPensionEst.kokuminAnnual / 12))}/月
+                  </p>
+                  <p>
+                    厚生年金（<span className="text-zinc-500">概算</span>）: {formatCurrency(Math.round(companyPensionEst.kouseiAnnual / 12))}/月（加入 {Math.floor(companyPensionEst.insuredMonths / 12)}年）
+                  </p>
+                  <p className="font-medium text-zinc-800 pt-1 border-t border-zinc-100">
+                    合計概算: {formatCurrency(Math.round((companyPensionEst.kokuminAnnual + companyPensionEst.kouseiAnnual) / 12))}/月
+                    （年額 {formatCurrency(Math.round(companyPensionEst.totalAnnual))}）
+                  </p>
+                  <p className="pt-2 mt-1 border-t border-zinc-100 text-[11px] text-zinc-500 leading-relaxed">
+                    ※ あくまで概算です。実際の受給額は加入期間中の標準報酬・物価/賃金スライド等で変動します。
+                    <br />
+                    計算式：厚生年金 ≒ 手取り年収 × <strong>{companyPensionEst.grossRatio.toFixed(2)}</strong>（年収帯で変わる額面化係数）÷ 12 → 標準報酬月額 × <strong>5.481/1000</strong> × 加入月数
+                    <br />
+                    今回の値：手取り年収 {formatCurrency(settings.annualIncome)} → 額面換算 約{formatCurrency(Math.round(companyPensionEst.grossAnnual))} → 標準報酬月額 約{formatCurrency(Math.round(companyPensionEst.monthlyAvg))}（上限65万円）
+                    <br />
+                    根拠：基礎年金満額 月70,608円（年847,296円・令和8年度）。報酬比例部分の乗率 5.481/1000 は平成15年4月以降の総報酬制に基づく。
+                    出典：<a href="https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202604/0401.html" target="_blank" rel="noopener noreferrer" className="text-emerald-700 underline hover:text-emerald-800">日本年金機構「令和8年4月分からの年金額等について」</a>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    update("pensionKokuminMonthly", Math.round(companyPensionEst.kokuminAnnual / 12));
+                    update("pensionKouseiMonthly", Math.round(companyPensionEst.kouseiAnnual / 12));
+                    update("pensionAnnual", companyPensionEst.totalAnnual);
+                  }}
+                  className="text-xs px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 transition-colors inline-flex items-center gap-1.5"
+                >
+                  概算を年金欄に適用（約 {Math.round(companyPensionEst.totalAnnual / 10000)}万円/年）
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  update("pensionKokuminMonthly", Math.round(companyPensionEst.kokuminAnnual / 12));
-                  update("pensionKouseiMonthly", Math.round(companyPensionEst.kouseiAnnual / 12));
-                  update("pensionAnnual", companyPensionEst.totalAnnual);
-                }}
-                className="text-xs px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 transition-colors inline-flex items-center gap-1.5"
-              >
-                自動推定を年金欄に適用（約 {Math.round(companyPensionEst.totalAnnual / 10000)}万円/年）
-              </button>
-            </div>
-          </details>
+            )}
+          </div>
         </SubSection>
       </Panel>
 
@@ -1735,6 +2228,7 @@ export default function ForecastPage() {
                   label="配偶者の年収（手取り）"
                   unit="万円"
                   value={settings.spouse.annualIncome}
+                  min={0}
                   scale={10000}
                   step={10}
                   onChange={(v) =>
@@ -1803,6 +2297,7 @@ export default function ForecastPage() {
                   label="配偶者の年金（年額・受給見込み）"
                   unit="万円"
                   value={settings.spouse.pensionAnnual}
+                  min={0}
                   scale={10000}
                   step={10}
                   onChange={(v) =>
@@ -1828,74 +2323,81 @@ export default function ForecastPage() {
                   }
                 />
               </Grid>
-              <details className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3">
-                <summary className="cursor-pointer text-sm font-medium text-zinc-700">
-                  詳細設定（年収・リタイア年齢から自動算出）
-                </summary>
-                <div className="mt-4 space-y-4">
-                  <label className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={settings.spouse.hasKousei}
-                      onChange={(e) =>
-                        update("spouse", {
-                          ...settings.spouse,
-                          hasKousei: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 accent-zinc-900"
-                    />
-                    配偶者が厚生年金に加入している
-                  </label>
-                  <Grid cols={2}>
-                    <NumberField
-                      label="配偶者の仕事の開始年齢"
-                      unit="歳"
-                      value={settings.spouse.workStartAge}
-                      min={15}
-                      max={settings.spouse.retireAge}
-                      onChange={(v) =>
-                        update("spouse", {
-                          ...settings.spouse,
-                          workStartAge: Math.min(
-                            settings.spouse.retireAge,
-                            Math.max(15, v)
-                          ),
-                        })
-                      }
-                    />
-                    <div className="hidden md:block" />
-                  </Grid>
-                  <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3 text-xs text-zinc-600 space-y-1.5">
-                    <p>
-                      国民年金（満額想定）: {formatCurrency(Math.round(spousePensionEst.kokuminAnnual / 12))}/月
-                    </p>
-                    <p>
-                      厚生年金（推定）: {settings.spouse.hasKousei
-                        ? `${formatCurrency(Math.round(spousePensionEst.kouseiAnnual / 12))}/月（加入 ${Math.floor(spousePensionEst.insuredMonths / 12)}年）`
-                        : "加入なし（0円）"}
-                    </p>
-                    <p className="font-medium text-zinc-800 pt-1 border-t border-zinc-100">
-                      合計推定: {formatCurrency(Math.round((spousePensionEst.kokuminAnnual + spousePensionEst.kouseiAnnual) / 12))}/月
-                      （年額 {formatCurrency(Math.round(spousePensionEst.totalAnnual))}）
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3">
+                <label className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={settings.spouse.hasKousei}
+                    onChange={(e) =>
                       update("spouse", {
                         ...settings.spouse,
-                        pensionAnnual: spousePensionEst.totalAnnual,
-                      });
-                    }}
-                    className="text-xs px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 transition-colors inline-flex items-center gap-1.5"
-                  >
-                    自動推定を年金欄に適用（約 {Math.round(
-                      spousePensionEst.totalAnnual / 10000
-                    )}万円/年）
-                  </button>
-                </div>
-              </details>
+                        hasKousei: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 accent-zinc-900"
+                  />
+                  厚生年金に加入している（会社員・公務員など）
+                </label>
+
+                {settings.spouse.hasKousei && (
+                  <div className="mt-4 space-y-4">
+                    <Grid cols={2}>
+                      <NumberField
+                        label="配偶者の仕事の開始年齢"
+                        unit="歳"
+                        value={settings.spouse.workStartAge}
+                        min={15}
+                        max={settings.spouse.retireAge}
+                        onChange={(v) =>
+                          update("spouse", {
+                            ...settings.spouse,
+                            workStartAge: Math.min(
+                              settings.spouse.retireAge,
+                              Math.max(15, v)
+                            ),
+                          })
+                        }
+                      />
+                      <div className="hidden md:block" />
+                    </Grid>
+
+                    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3 text-xs text-zinc-600 space-y-1.5">
+                      <p>
+                        国民年金（満額想定）: {formatCurrency(Math.round(spousePensionEst.kokuminAnnual / 12))}/月
+                      </p>
+                      <p>
+                        厚生年金（<span className="text-zinc-500">概算</span>）: {formatCurrency(Math.round(spousePensionEst.kouseiAnnual / 12))}/月（加入 {Math.floor(spousePensionEst.insuredMonths / 12)}年）
+                      </p>
+                      <p className="font-medium text-zinc-800 pt-1 border-t border-zinc-100">
+                        合計概算: {formatCurrency(Math.round((spousePensionEst.kokuminAnnual + spousePensionEst.kouseiAnnual) / 12))}/月
+                        （年額 {formatCurrency(Math.round(spousePensionEst.totalAnnual))}）
+                      </p>
+                      <p className="pt-2 mt-1 border-t border-zinc-100 text-[11px] text-zinc-500 leading-relaxed">
+                        ※ あくまで概算です。実際の受給額は加入期間中の標準報酬・物価/賃金スライド等で変動します。
+                        <br />
+                        計算式：厚生年金 ≒ 配偶者の手取り年収 × <strong>{spousePensionEst.grossRatio.toFixed(2)}</strong>（年収帯で変わる額面化係数）÷ 12 → 標準報酬月額 × <strong>5.481/1000</strong> × 加入月数
+                        <br />
+                        今回の値：手取り年収 {formatCurrency(settings.spouse.annualIncome)} → 額面換算 約{formatCurrency(Math.round(spousePensionEst.grossAnnual))} → 標準報酬月額 約{formatCurrency(Math.round(spousePensionEst.monthlyAvg))}（上限65万円）
+                        <br />
+                        出典：<a href="https://www.nenkin.go.jp/oshirase/taisetu/kojin/2026/202604/0401.html" target="_blank" rel="noopener noreferrer" className="text-emerald-700 underline hover:text-emerald-800">日本年金機構「令和8年4月分からの年金額等について」</a>
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        update("spouse", {
+                          ...settings.spouse,
+                          pensionAnnual: spousePensionEst.totalAnnual,
+                        });
+                      }}
+                      className="text-xs px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 transition-colors inline-flex items-center gap-1.5"
+                    >
+                      概算を年金欄に適用（約 {Math.round(spousePensionEst.totalAnnual / 10000)}万円/年）
+                    </button>
+                  </div>
+                )}
+              </div>
             </SubSection>
           </>
         )}
@@ -1904,17 +2406,18 @@ export default function ForecastPage() {
       <Panel>
         <PanelHeader
           title="リタイア前の支出"
-          subtitle="月額・現在価値（インフレは自動適用）。「生活費」と「住居費」は別々に入力してください"
+          subtitle="月額・現在価値。「生活費」と「住居費」は別々に入力してください（賃貸の家賃は名目固定で計算）"
         />
         <Grid>
           <NumberField
             label="生活費（住居費除く）"
             unit="万円/月"
             value={settings.monthlyLiving}
+            min={0}
             scale={10000}
             step={1}
             onChange={(v) => update("monthlyLiving", v)}
-            hint={`食費・水道光熱費・通信費など。家賃/ローンは下で別途設定 / 年換算 ${formatCurrency(settings.monthlyLiving * 12)}`}
+            hint={`食費・水道光熱費・通信費など。年換算 ${formatCurrency(settings.monthlyLiving * 12)}`}
           />
           <SelectField
             label="住居形態"
@@ -1926,6 +2429,7 @@ export default function ForecastPage() {
             label={settings.housingType === "持ち家" ? "住居費（ローン）" : "住居費（家賃）"}
             unit="万円/月"
             value={settings.monthlyHousing}
+            min={0}
             scale={10000}
             step={1}
             onChange={(v) => update("monthlyHousing", v)}
@@ -1939,18 +2443,34 @@ export default function ForecastPage() {
               min={settings.currentAge}
               max={120}
               onChange={(v) => update("housingEndAge", v)}
-              hint="完済以降は住居費0として計算"
+              hint="完済後はローン返済0円、以下の「維持費」のみ計上"
+            />
+          ) : (
+            <div className="hidden lg:block" />
+          )}
+          {settings.housingType === "持ち家" ? (
+            <NumberField
+              label="維持費（固定資産税・修繕積立等）"
+              unit="万円/月"
+              value={settings.monthlyHousingMaintenance}
+              min={0}
+              scale={10000}
+              step={0.5}
+              onChange={(v) => update("monthlyHousingMaintenance", v)}
+              hint={`完済後も発生する継続費用。年換算 ${formatCurrency(settings.monthlyHousingMaintenance * 12)}`}
             />
           ) : (
             <div className="hidden lg:block" />
           )}
           <NumberField
-            label="その他（旅行・車・冠婚葬祭）"
+            label="その他・特別支出（旅行・帰省・冠婚葬祭）"
             unit="万円/年"
             value={settings.otherAnnual}
+            min={0}
             scale={10000}
             step={5}
             onChange={(v) => update("otherAnnual", v)}
+            hint="車ありなら車検・保険・税金・駐車場・買替積立をここに上乗せ"
           />
         </Grid>
         <SubTotal
@@ -1966,8 +2486,63 @@ export default function ForecastPage() {
       <Panel>
         <PanelHeader
           title="子供の費用"
-          subtitle="教育費・子供本人の生活費・習い事を子供ごとに計算"
+          subtitle="教育費・子供本人の生活費・習い事を子供ごとに計算。初期値は公立中心の進学プランです。"
         />
+        <details className="mb-5 rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 text-xs text-zinc-600">
+          <summary className="cursor-pointer font-medium text-zinc-700">
+            計算に使う出典を見る
+          </summary>
+          <ul className="mt-3 space-y-2 leading-relaxed">
+            <li>
+              小中高の学費：
+              <a
+                href="https://www.mext.go.jp/b_menu/toukei/chousa03/gakushuuhi/kekka/k_detail/mext_00002.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-800 underline underline-offset-2 hover:text-zinc-950"
+              >
+                文部科学省「令和5年度 子供の学習費調査」
+              </a>
+              （学校教育費＋学校給食費。塾・習い事は別入力）
+            </li>
+            <li>
+              国公立大学・大学院：
+              <a
+                href="https://laws.e-gov.go.jp/law/416M60000080016"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-800 underline underline-offset-2 hover:text-zinc-950"
+              >
+                e-Gov「国立大学等の授業料その他の費用に関する省令」
+              </a>
+              （授業料535,800円、入学料282,000円の標準額）
+            </li>
+            <li>
+              私立大学・大学院：
+              <a
+                href="https://www.jasso.go.jp/statistics/gakusei_chosa/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-800 underline underline-offset-2 hover:text-zinc-950"
+              >
+                JASSO「学生生活調査」
+              </a>
+              の学費区分を参考にした目安
+            </li>
+            <li>
+              子供本人の生活費：
+              <a
+                href="https://www.stat.go.jp/data/kakei/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-800 underline underline-offset-2 hover:text-zinc-950"
+              >
+                総務省統計局「家計調査」
+              </a>
+              を参考にした月額目安（大学生は自宅通学想定）
+            </li>
+          </ul>
+        </details>
         <ChildrenSection
           childrenList={settings.children}
           onChange={(children) => update("children", children)}
@@ -2047,27 +2622,49 @@ export default function ForecastPage() {
                 label="生活費（住居費除く）"
                 unit="万円/月"
                 value={settings.monthlyLivingRetired}
+                min={0}
                 scale={10000}
                 step={1}
                 onChange={(v) => update("monthlyLivingRetired", v)}
-                hint={`食費・水道光熱費・通信費など。家賃/ローンは右で別途設定 / 年換算 ${formatCurrency(settings.monthlyLivingRetired * 12)}`}
+                hint={`食費・水道光熱費・通信費など。年換算 ${formatCurrency(settings.monthlyLivingRetired * 12)}`}
               />
+              {settings.housingType === "持ち家" ? (
+                <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 p-3 text-xs text-zinc-600">
+                  <div className="font-medium text-zinc-700">住居の維持費（リタイア後）</div>
+                  <div className="mt-1 text-zinc-900">月 {Math.round(settings.monthlyHousingMaintenance / 10000 * 10) / 10}万円・年換算 {formatCurrency(settings.monthlyHousingMaintenance * 12)}</div>
+                  <div className="mt-1 text-[11px] text-zinc-500">ローン完済後はリタイア前の「維持費」をそのまま計上します</div>
+                </div>
+              ) : (
+                <NumberField
+                  label="住居費"
+                  unit="万円/月"
+                  value={settings.monthlyHousingRetired}
+                  min={0}
+                  scale={10000}
+                  step={1}
+                  onChange={(v) => update("monthlyHousingRetired", v)}
+                  hint={`年換算 ${formatCurrency(settings.monthlyHousingRetired * 12)}`}
+                />
+              )}
               <NumberField
-                label="住居費"
-                unit="万円/月"
-                value={settings.monthlyHousingRetired}
+                label="その他・特別支出（旅行・帰省・冠婚葬祭）"
+                unit="万円/年"
+                value={settings.otherAnnualRetired}
+                min={0}
                 scale={10000}
-                step={1}
-                onChange={(v) => update("monthlyHousingRetired", v)}
-                hint={`年換算 ${formatCurrency(settings.monthlyHousingRetired * 12)}`}
+                step={5}
+                onChange={(v) => update("otherAnnualRetired", v)}
+                hint="リタイア後の旅行・帰省・冠婚葬祭・車関連など"
               />
             </Grid>
             <SubTotal
               label="リタイア後の年間支出"
               value={
                 settings.monthlyLivingRetired * 12 +
-                settings.monthlyHousingRetired * 12 +
-                settings.otherAnnual
+                (settings.housingType === "持ち家"
+                  ? settings.monthlyHousingMaintenance * 12
+                  : settings.monthlyHousingRetired * 12) +
+                settings.otherAnnualRetired
               }
               hint="4%ルールの必要資産はこの額の25倍"
             />
@@ -2079,6 +2676,7 @@ export default function ForecastPage() {
                 label="取り崩し率"
                 unit="%/年"
                 value={settings.withdrawalPercent}
+                min={0}
                 step={0.1}
                 decimal
                 onChange={(v) => update("withdrawalPercent", v)}
@@ -2094,6 +2692,67 @@ export default function ForecastPage() {
                 pct={settings.withdrawalPercent}
               />
             )}
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
+              <div className="mb-3">
+                <p className="text-xs font-medium text-zinc-700">
+                  FIRE判定の前提
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
+                  FIRE達成カードは、リタイア後支出・サイド収入・年金・配偶者収入を年次で見て、資産が想定寿命まで持つ最初の年齢を表示します。グラフの必要資産ラインは、希望リタイア時点の支出 × 25 の目安です。
+                </p>
+              </div>
+              <Grid cols={2}>
+                <NumberField
+                  label="基準生活費（住居費除く）"
+                  unit="万円/月"
+                  value={settings.monthlyLivingRetired}
+                  min={0}
+                  scale={10000}
+                  step={1}
+                  onChange={(v) => update("monthlyLivingRetired", v)}
+                  hint={`年換算 ${formatCurrency(settings.monthlyLivingRetired * 12)}`}
+                />
+                {settings.housingType === "持ち家" ? (
+                  <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 p-3 text-xs text-zinc-600">
+                    <div className="font-medium text-zinc-700">基準住居費（維持費）</div>
+                    <div className="mt-1 text-zinc-900">月 {Math.round(settings.monthlyHousingMaintenance / 10000 * 10) / 10}万円・年換算 {formatCurrency(settings.monthlyHousingMaintenance * 12)}</div>
+                    <div className="mt-1 text-[11px] text-zinc-500">持ち家はリタイア前の「維持費」をそのまま使用</div>
+                  </div>
+                ) : (
+                  <NumberField
+                    label="基準住居費"
+                    unit="万円/月"
+                    value={settings.monthlyHousingRetired}
+                    min={0}
+                    scale={10000}
+                    step={1}
+                    onChange={(v) => update("monthlyHousingRetired", v)}
+                    hint={`年換算 ${formatCurrency(settings.monthlyHousingRetired * 12)}`}
+                  />
+                )}
+                <NumberField
+                  label="その他・特別支出（旅行・帰省・冠婚葬祭）"
+                  unit="万円/年"
+                  value={settings.otherAnnualRetired}
+                  min={0}
+                  scale={10000}
+                  step={5}
+                  onChange={(v) => update("otherAnnualRetired", v)}
+                  hint="リタイア後の旅行・帰省・冠婚葬祭・車関連など"
+                />
+              </Grid>
+              <SubTotal
+                label="4%ルールの基準年間支出"
+                value={
+                  settings.monthlyLivingRetired * 12 +
+                  (settings.housingType === "持ち家"
+                    ? settings.monthlyHousingMaintenance * 12
+                    : settings.monthlyHousingRetired * 12) +
+                  settings.otherAnnualRetired
+                }
+                hint="必要資産はこの額の25倍"
+              />
+            </div>
           </>
         )}
       </Panel>
@@ -2108,13 +2767,14 @@ export default function ForecastPage() {
             label="年間サイド収入（手取り）"
             unit="万円/年"
             value={settings.sideIncomeAnnual}
+            min={0}
             scale={10000}
             step={10}
             onChange={(v) => update("sideIncomeAnnual", v)}
             hint={
               settings.sideIncomeAnnual > 0
                 ? `月換算 約 ${formatCurrency(Math.round(settings.sideIncomeAnnual / 12))}（手取り）`
-                : "0 のままなら通常のFIRE（リタイア後収入なし）として計算"
+                : "リタイア後収入なし"
             }
           />
           <NumberField
@@ -2125,7 +2785,7 @@ export default function ForecastPage() {
             max={settings.lifeAge}
             step={1}
             onChange={(v) => update("sideIncomeUntilAge", v)}
-            hint={`${settings.retireAge}歳〜${settings.sideIncomeUntilAge}歳の期間に上記収入を計上`}
+            hint={`FIRE後または希望リタイア後から${settings.sideIncomeUntilAge}歳まで上記収入を計上`}
           />
         </Grid>
         <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
@@ -2199,19 +2859,7 @@ export default function ForecastPage() {
             なぜリタイア前後で利回りを分けるのか
           </p>
           <p>
-            リタイア前は給与収入で生活費をまかなえるため、株式比率を高めにして
-            <strong className="font-semibold">期待リターン重視（例: 4〜6%）</strong>
-            の運用ができます。一方リタイア後は資産の取り崩しが始まるため、
-            暴落直後に売却すると元本が大きく毀損する
-            <strong className="font-semibold">「シーケンス・オブ・リターン・リスク」</strong>
-            が発生します。
-          </p>
-          <p className="mt-2">
-            これを避けるため、株式の比率を下げて債券・現金を厚くし、
-            <strong className="font-semibold">期待リターンと引き換えに値動きを抑える</strong>
-            アプローチが取られることがあります。当シミュレーターでは安全マージンを織り込みたい場合、
-            リタイア後利回りを 2〜3% 程度に控えめに設定して試算するのがおすすめです
-            （実際の最適配分は個々のリスク許容度・他の収入源によって異なります）。
+            リタイア前は増やす運用、リタイア後は減らさない運用が重視されるため、利回りを分けて設定できます。
           </p>
         </div>
       </Panel>
@@ -2364,7 +3012,7 @@ export default function ForecastPage() {
 
       <p className="text-xs text-zinc-400 leading-relaxed">
         ※ 教育費は文部科学省「子供の学習費調査」「学生生活調査」を参考にした標準額（年額）。塾は小4〜高3、入学金は小1・中1・高1・大1・院1の各時点で計上。子供本人の生活費と習い事は入力値を年次費用に反映します。住居費は終了年齢を超えると0（住宅ローン完済を想定）。
-        FIRE 判定は「年末資産 ≥ リタイア後年間支出（子供費除く・現在価値）× 25」のインフレ補正版。インフレは支出費目に毎年適用し、給与・サイド収入は個別の上昇率を有効にした場合のみ増加、年金は入力した受給見込み額を据え置きます。税・社会保険は考慮していないため目安としてご利用ください。
+        FIRE 判定は「年末資産 ≥ リタイア後年間支出（子供費除く・現在価値）× 25」のインフレ補正版。インフレは支出費目に毎年適用し、賃貸時の家賃は名目固定（インフレ非適用）で計算します。給与・サイド収入は個別の上昇率を有効にした場合のみ増加、年金は入力した受給見込み額を据え置きます。税・社会保険は考慮していないため目安としてご利用ください。
       </p>
       <p className="text-[11px] text-zinc-400">
         データ基準: 2026年4月時点（年金は令和6年度老齢基礎年金満額816,000円/年を使用。習い事はコドモブースター、プロリア英会話、テニス料金相場ページの公開レンジから代表値を設定）
@@ -2372,96 +3020,26 @@ export default function ForecastPage() {
 
       <div className="no-print"><AdSlot slot="0000000000" /></div>
 
-      {/* 解説記事への導線 */}
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8">
-        <h2 className="text-lg font-semibold text-zinc-900 mb-2">
-          シミュレーションを「数字つきの意思決定」に変える解説記事
-        </h2>
-        <p className="text-sm text-zinc-600 mb-4">
-          ありがちな誤入力、ケーススタディ、日本特有の落とし穴まで。読み物として面白く、判断にそのまま使える5本を用意しました。
-        </p>
-        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-          <li>
-            <Link
-              href="/articles/how-to-use"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
-            >
-              <div className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 mb-1">使い方</div>
-              <div className="font-medium text-zinc-900">FIREを近づける6つの戦略視点</div>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/articles/use-cases"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
-            >
-              <div className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 mb-1">事例</div>
-              <div className="font-medium text-zinc-900">ケーススタディ：年収・家族構成別のFIRE現実解</div>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/articles/fire-basics"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
-            >
-              <div className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 mb-1">基礎</div>
-              <div className="font-medium text-zinc-900">日本版4%ルール：本家とどこが違うのか</div>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/articles/education-cost"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
-            >
-              <div className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 mb-1">教育費</div>
-              <div className="font-medium text-zinc-900">子供1人いくら？教育費の本当の数字</div>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/articles/post-fire-tax"
-              className="block rounded-xl border border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 p-4 transition-colors h-full"
-            >
-              <div className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 mb-1">税金・社保</div>
-              <div className="font-medium text-zinc-900">FIRE後の落とし穴：健保・住民税・年金の真実</div>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/articles"
-              className="block rounded-xl border border-dashed border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50 p-4 transition-colors h-full text-zinc-500 hover:text-zinc-900"
-            >
-              <div className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 mb-1">一覧</div>
-              <div className="font-medium">すべての記事を見る →</div>
-            </Link>
-          </li>
-        </ul>
-      </section>
-
       {/* SEO: FIRE 解説セクション */}
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8 space-y-6">
+      <section id="fire-definition" className="rounded-2xl border border-zinc-200 bg-white p-6 lg:p-8 space-y-6 scroll-mt-24">
         <div>
           <h2 className="text-xl font-semibold text-zinc-900 mb-2">
-            FIREとは？早期リタイアの基礎知識
+            このシミュレーターでわかること
           </h2>
           <p className="text-sm text-zinc-700 leading-relaxed">
-            <strong>FIRE</strong>（Financial Independence, Retire Early）とは、
-            十分な資産を築いてその運用益で生活し、早期に労働から離れるライフスタイルです。
-            一般に「年間支出の25倍」の資産を作り、年4%以内で取り崩せば資産が長持ちするとされます（4%ルール）。
-            本ページの<strong>FIREシミュレーター</strong>は、年齢・年収・支出・子供費・住居費・年金まで入力して
-            <strong>FIREにいくら必要か</strong>をその場で試算できる無料ツールです。
+            年齢・年収・支出・子供費・住居費・年金まで入力すると、将来の資産推移と必要資金の目安をまとめて確認できます。
+            早めのリタイアを目指す人にも、家計の見通しを整えたい人にも使える無料ツールです。
           </p>
         </div>
 
         <div>
           <h2 className="text-xl font-semibold text-zinc-900 mb-2">
-            FIREにいくら必要？目安と計算方法
+            FIRE（経済的自立）とは？必要資金の目安と計算方法
           </h2>
           <p className="text-sm text-zinc-700 leading-relaxed mb-3">
-            必要額の目安は <strong>「リタイア後の年間支出 × 25」</strong>。
+            必要額の目安は <strong>「リタイア後の年間支出 × 25」</strong>です。
             たとえば月25万円で暮らすなら、年300万円 × 25 = <strong>7,500万円</strong>が必要資産の目安です。
-            結婚・子育て・住居費（賃貸／持ち家）・教育費を含めるとさらに増えるため、
-            ライフプランに沿った個別試算が欠かせません。
+            このツールのFIRE達成年齢は、サイド収入・年金・配偶者収入などのFIRE後収入も年ごとに入れて、想定寿命まで資産が持つかで判定します。
           </p>
           <ul className="text-sm text-zinc-700 list-disc pl-5 space-y-1">
             <li>月20万円で暮らす場合 → 年240万円 × 25 = <strong>6,000万円</strong></li>
@@ -2470,30 +3048,6 @@ export default function ForecastPage() {
           </ul>
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold text-zinc-900 mb-2">
-            結婚・子育て世帯のFIRE
-          </h2>
-          <p className="text-sm text-zinc-700 leading-relaxed">
-            <strong>結婚</strong>や子供の有無は必要資産を大きく変えます。子供1人を大学卒業まで育てる
-            費用は概ね <strong>1,000万〜2,500万円</strong>（進学先・塾・生活費・習い事次第）。
-            本シミュレーターは公立／私立の選択、大学・大学院の進路、塾通いまで反映し、
-            出産時の親年齢から教育費・生活費・習い事を年次で自動算出します。共働き・片働き・住居形態（賃貸／持ち家）も切り替えて、
-            現実的な FIRE 目標額を把握しましょう。
-          </p>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold text-zinc-900 mb-2">
-            FIREの種類（Lean / Fat / Side / Coast）
-          </h2>
-          <ul className="text-sm text-zinc-700 list-disc pl-5 space-y-1">
-            <li><strong>Lean FIRE</strong>：質素な生活で支出を抑え、比較的少ない資産で達成するFIRE</li>
-            <li><strong>Fat FIRE</strong>：余裕のある暮らしを維持するため、より多くの資産を必要とするFIRE</li>
-            <li><strong>Side FIRE（サイドFIRE）</strong>：完全リタイアではなく副業や軽い労働を続けるスタイル</li>
-            <li><strong>Barista FIRE（バリスタFIRE）</strong>：パートタイムや軽労働で社会保険を確保しつつ、不足分を資産収入で補うスタイル</li>
-          </ul>
-        </div>
       </section>
     </div>
   );
@@ -2691,7 +3245,7 @@ function Panel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PanelHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function PanelHeader({ title, subtitle }: { title: string; subtitle?: React.ReactNode }) {
   return (
     <div className="mb-6">
       <h3 className="text-base font-semibold text-zinc-900">{title}</h3>
@@ -2795,6 +3349,12 @@ function NumberField({
         ? String(v)
         : String(Number((v / scale).toFixed(4)));
   const isDecimal = decimal || scale !== 1;
+  const clampDisplayValue = (parsed: number) => {
+    let next = parsed;
+    if (typeof min === "number") next = Math.max(min, next);
+    if (typeof max === "number") next = Math.min(max, next);
+    return next;
+  };
   const toStored = (parsed: number) =>
     isDecimal && scale === 1 ? parsed : Math.round(parsed * scale);
 
@@ -2831,16 +3391,18 @@ function NumberField({
           setText(raw);
           if (raw === "") return;
           const parsed = isDecimal ? parseFloat(raw) : parseInt(raw, 10);
-          if (Number.isFinite(parsed)) onChange(toStored(parsed));
+          if (Number.isFinite(parsed)) onChange(toStored(clampDisplayValue(parsed)));
         }}
         onBlur={() => {
           setFocused(false);
           const parsed = isDecimal ? parseFloat(text) : parseInt(text, 10);
           if (text === "" || !Number.isFinite(parsed)) {
-            onChange(0);
-            setText("0");
+            const fallback = clampDisplayValue(0);
+            const stored = toStored(fallback);
+            onChange(stored);
+            setText(toDisplay(stored));
           } else {
-            const stored = toStored(parsed);
+            const stored = toStored(clampDisplayValue(parsed));
             onChange(stored);
             setText(toDisplay(stored));
           }
@@ -2901,11 +3463,15 @@ function SummaryCard({
   value,
   sub,
   tone,
+  href,
+  tooltip,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone: "blue" | "green" | "orange" | "purple" | "red" | "gray";
+  href?: string;
+  tooltip?: string;
 }) {
   const accent: Record<typeof tone, string> = {
     blue: "text-blue-600",
@@ -2924,7 +3490,7 @@ function SummaryCard({
     gray: "bg-zinc-400",
   };
   return (
-    <div className="relative rounded-2xl p-5 bg-white border border-zinc-200">
+    <div className="relative rounded-2xl p-5 bg-white border border-zinc-200 transition-colors" title={tooltip}>
       <div className="flex items-center gap-2 mb-2">
         <span className={`w-1.5 h-1.5 rounded-full ${dot[tone]}`} />
         <p className={`text-[11px] uppercase tracking-wider font-medium ${accent[tone]}`}>
@@ -2935,6 +3501,15 @@ function SummaryCard({
         {value}
       </p>
       {sub && <p className="text-xs mt-1 text-zinc-500">{sub}</p>}
+      {href && (
+        <Link
+          href={href}
+          className="mt-3 inline-flex items-center gap-1 rounded-full border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/20"
+        >
+          FIREの定義を見る
+          <span aria-hidden>→</span>
+        </Link>
+      )}
     </div>
   );
 }
@@ -3021,6 +3596,7 @@ function AssetsChart({
   pensionStartAge,
   depletionAge,
   requiredAtRetirement,
+  fireThresholdAssets,
 }: {
   rows: YearRow[];
   retireAge: number;
@@ -3028,6 +3604,7 @@ function AssetsChart({
   pensionStartAge: number;
   depletionAge: number | null;
   requiredAtRetirement: number;
+  fireThresholdAssets: number | null;
 }) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
@@ -3142,30 +3719,7 @@ function AssetsChart({
             </g>
           ))}
 
-          {/* Required-at-retirement reference line */}
-          {requiredAtRetirement > 0 && y(requiredAtRetirement) > PAD_T && y(requiredAtRetirement) < PAD_T + innerH && (
-            <g>
-              <line
-                x1={PAD_L}
-                x2={W - PAD_R}
-                y1={y(requiredAtRetirement)}
-                y2={y(requiredAtRetirement)}
-                stroke="#f59e0b"
-                strokeOpacity="0.7"
-                strokeDasharray="4 4"
-                strokeWidth="1"
-              />
-              <text
-                x={W - PAD_R - 4}
-                y={y(requiredAtRetirement) - 4}
-                fontSize="10"
-                fill="#b45309"
-                textAnchor="end"
-              >
-                必要資産（4%ルール）
-              </text>
-            </g>
-          )}
+          {/* Required-at-retirement reference line is rendered later (after phase bands & area) so the label is not covered. */}
 
           {/* Phase background bands */}
           <rect
@@ -3202,10 +3756,46 @@ function AssetsChart({
             strokeLinecap="round"
           />
 
+          {/* Horizontal reference line: FIRE達成時の資産水準（あれば）、なければ4%ルールの必要資産 */}
+          {(() => {
+            const useFire = fireThresholdAssets !== null && fireThresholdAssets > 0;
+            const value = useFire ? (fireThresholdAssets as number) : requiredAtRetirement;
+            const label = useFire ? "FIRE達成水準" : "必要資産（4%ルール）";
+            if (!(value > 0)) return null;
+            const yPos = y(value);
+            if (!(yPos > PAD_T && yPos < PAD_T + innerH)) return null;
+            const stroke = useFire ? "#8b5cf6" : "#f59e0b";
+            const textFill = useFire ? "#6d28d9" : "#b45309";
+            return (
+              <g>
+                <line
+                  x1={PAD_L}
+                  x2={W - PAD_R}
+                  y1={yPos}
+                  y2={yPos}
+                  stroke={stroke}
+                  strokeOpacity="0.7"
+                  strokeDasharray="4 4"
+                  strokeWidth="1"
+                />
+                <text
+                  x={W - PAD_R - 4}
+                  y={yPos - 4}
+                  fontSize="10"
+                  fill={textFill}
+                  textAnchor="end"
+                  fontWeight="600"
+                >
+                  {label}
+                </text>
+              </g>
+            );
+          })()}
+
           {/* Event vertical lines */}
           {[
             { age: retireAge, color: "#f59e0b", label: "リタイア" },
-            ...(fireAge !== null
+            ...(fireAge !== null && fireAge < retireAge
               ? [{ age: fireAge, color: "#8b5cf6", label: "FIRE" }]
               : []),
             ...(pensionStartAge >= minAge && pensionStartAge <= maxAge
@@ -3319,6 +3909,267 @@ function AssetsChart({
   );
 }
 
+// =============================================================================
+// Expense breakdown chart (stacked area)
+// =============================================================================
+
+function ExpenseChart({
+  rows,
+  retireAge,
+  spouseEnabled,
+}: {
+  rows: YearRow[];
+  retireAge: number;
+  spouseEnabled: boolean;
+}) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const W = 1000;
+  const H = 320;
+  const PAD_L = 70;
+  const PAD_R = 24;
+  const PAD_T = 24;
+  const PAD_B = 36;
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_T - PAD_B;
+
+  const minAge = rows[0].age;
+  const maxAge = rows[rows.length - 1].age;
+  const ageSpan = Math.max(1, maxAge - minAge);
+
+  // 各年の積み上げ順: 生活費 → 住居費 → その他 → 子供
+  const series = [
+    { key: "livingCost" as const, label: "生活費", color: "#3b82f6" },
+    { key: "housingCost" as const, label: "住居費", color: "#10b981" },
+    { key: "otherCost" as const, label: "その他", color: "#f59e0b" },
+    { key: "childrenCost" as const, label: "子供費", color: "#ef4444" },
+  ];
+
+  const stackedTops = rows.map((r) => {
+    let acc = 0;
+    return series.map((s) => {
+      const v = Math.max(0, r[s.key] ?? 0);
+      acc += v;
+      return acc;
+    });
+  });
+
+  const maxStacked = Math.max(1, ...rows.map((_, i) => stackedTops[i][series.length - 1]));
+  const maxIncome = Math.max(0, ...rows.map((r) => r.income ?? 0));
+  const maxVal = Math.max(1, maxStacked, maxIncome);
+
+  function x(age: number) {
+    return PAD_L + ((age - minAge) / ageSpan) * innerW;
+  }
+  function y(v: number) {
+    return PAD_T + (1 - v / maxVal) * innerH;
+  }
+
+  // Build a stacked area path per series (top boundary down to previous boundary).
+  function buildAreaPath(seriesIdx: number): string {
+    const topPts: string[] = [];
+    const botPts: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const ageX = x(rows[i].age);
+      const top = stackedTops[i][seriesIdx];
+      const bot = seriesIdx === 0 ? 0 : stackedTops[i][seriesIdx - 1];
+      topPts.push(`${ageX},${y(top)}`);
+      botPts.unshift(`${ageX},${y(bot)}`);
+    }
+    return `M ${topPts.join(" L ")} L ${botPts.join(" L ")} Z`;
+  }
+
+  const yTicks = Array.from({ length: 5 }, (_, i) => {
+    const v = (maxVal * i) / 4;
+    return { v, y: y(v) };
+  });
+
+  const xTicks = rows
+    .filter((r) => r.age % 5 === 0 || r.age === minAge || r.age === maxAge)
+    .map((r) => ({ age: r.age, x: x(r.age) }));
+
+  const hover = hoverIdx !== null ? rows[hoverIdx] : null;
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:p-7">
+      <div className="flex items-start justify-between flex-wrap gap-2 mb-5">
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900">収入と支出の推移</h3>
+          <p className="text-xs text-zinc-500 mt-1">
+            年間収入（実線）と支出（積み上げ）/ 横軸: 年齢
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 text-[11px] text-zinc-500">
+          <Legend dotClass="" label={spouseEnabled ? "収入（本人＋配偶者）" : "収入"} colorHex="#18181b" />
+          {series.map((s) => (
+            <Legend key={s.key} dotClass="" label={s.label} colorHex={s.color} />
+          ))}
+        </div>
+      </div>
+
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full h-auto"
+          preserveAspectRatio="none"
+          onMouseLeave={() => setHoverIdx(null)}
+          onMouseMove={(e) => {
+            const svg = e.currentTarget;
+            const rect = svg.getBoundingClientRect();
+            const px = ((e.clientX - rect.left) / rect.width) * W;
+            const ageF = ((px - PAD_L) / innerW) * ageSpan + minAge;
+            const idx = Math.max(
+              0,
+              Math.min(rows.length - 1, Math.round(ageF - minAge)),
+            );
+            setHoverIdx(idx);
+          }}
+        >
+          {/* Y grid + labels */}
+          {yTicks.map((t, i) => (
+            <g key={i}>
+              <line
+                x1={PAD_L}
+                x2={W - PAD_R}
+                y1={t.y}
+                y2={t.y}
+                stroke={t.v === 0 ? "#e4e4e7" : "#f4f4f5"}
+                strokeDasharray={t.v === 0 ? "0" : "2 3"}
+              />
+              <text
+                x={PAD_L - 8}
+                y={t.y + 4}
+                fontSize="10"
+                fill="#a1a1aa"
+                textAnchor="end"
+              >
+                {formatCompactJPY(Math.round(t.v))}円
+              </text>
+            </g>
+          ))}
+
+          {/* Retirement background band */}
+          <rect
+            x={x(retireAge)}
+            y={PAD_T}
+            width={Math.max(0, W - PAD_R - x(retireAge))}
+            height={innerH}
+            fill="#fafafa"
+          />
+
+          {/* Stacked areas */}
+          {series.map((s, idx) => (
+            <path
+              key={s.key}
+              d={buildAreaPath(idx)}
+              fill={s.color}
+              fillOpacity="0.7"
+            />
+          ))}
+
+          {/* Income line (本人＋配偶者) */}
+          <polyline
+            points={rows.map((r) => `${x(r.age)},${y(Math.max(0, r.income ?? 0))}`).join(" ")}
+            fill="none"
+            stroke="#18181b"
+            strokeWidth="1.75"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+
+          {/* Retire vertical line */}
+          <g>
+            <line
+              x1={x(retireAge)}
+              x2={x(retireAge)}
+              y1={PAD_T}
+              y2={PAD_T + innerH}
+              stroke="#f59e0b"
+              strokeOpacity="0.5"
+              strokeDasharray="3 3"
+              strokeWidth="1"
+            />
+            <text
+              x={x(retireAge)}
+              y={PAD_T + 12}
+              fontSize="10"
+              fill="#b45309"
+              textAnchor="middle"
+              fontWeight="600"
+            >
+              リタイア
+            </text>
+          </g>
+
+          {/* X labels */}
+          {xTicks.map((t) => (
+            <text
+              key={t.age}
+              x={t.x}
+              y={H - 12}
+              fontSize="10"
+              fill="#a1a1aa"
+              textAnchor="middle"
+            >
+              {t.age}
+            </text>
+          ))}
+
+          {/* Hover indicator */}
+          {hover && (
+            <line
+              x1={x(hover.age)}
+              x2={x(hover.age)}
+              y1={PAD_T}
+              y2={PAD_T + innerH}
+              stroke="#71717a"
+              strokeWidth="1"
+            />
+          )}
+        </svg>
+
+        {hover && (
+          <div
+            className="absolute pointer-events-none rounded-xl bg-white border border-zinc-200 shadow-lg px-3.5 py-3 text-xs min-w-[200px]"
+            style={{
+              left: `${(x(hover.age) / W) * 100}%`,
+              top: 8,
+              transform:
+                x(hover.age) / W > 0.7
+                  ? "translateX(-105%)"
+                  : "translateX(8px)",
+            }}
+          >
+            <div className="font-semibold text-zinc-900 mb-1.5 flex items-baseline gap-2">
+              {hover.age} 歳
+              <span className="text-[10px] text-zinc-500 font-normal">
+                {hover.phase === "accumulation" ? "リタイア前" : "リタイア後"}
+              </span>
+            </div>
+            <Row label="収入" value={formatCurrency(Math.round(hover.income))} tone="emerald" />
+            <Row label="支出合計" value={formatCurrency(Math.round(hover.expense))} bold />
+            <Row label="生活費" value={formatCurrency(Math.round(hover.livingCost))} />
+            <Row label="住居費" value={formatCurrency(Math.round(hover.housingCost))} />
+            <Row label="その他" value={formatCurrency(Math.round(hover.otherCost))} />
+            {hover.childrenCost > 0 && (
+              <Row label="子供費" value={formatCurrency(Math.round(hover.childrenCost))} tone="orange" />
+            )}
+            {hover.childEducationCost > 0 && (
+              <Row label="うち教育費" value={formatCurrency(Math.round(hover.childEducationCost))} small />
+            )}
+            {hover.childLivingCost > 0 && (
+              <Row label="うち子供生活費" value={formatCurrency(Math.round(hover.childLivingCost))} small />
+            )}
+            {hover.childLessonCost > 0 && (
+              <Row label="うち習い事" value={formatCurrency(Math.round(hover.childLessonCost))} small />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Row({
   label,
   value,
@@ -3350,10 +4201,13 @@ function Row({
   );
 }
 
-function Legend({ dotClass, label }: { dotClass: string; label: string }) {
+function Legend({ dotClass, label, colorHex }: { dotClass: string; label: string; colorHex?: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`w-2 h-2 rounded-full ${dotClass}`} /> {label}
+      <span
+        className={`w-2 h-2 rounded-full ${dotClass}`}
+        style={colorHex ? { backgroundColor: colorHex } : undefined}
+      /> {label}
     </span>
   );
 }
@@ -3466,7 +4320,7 @@ function ChildrenSection({
 
       {childrenList.length === 0 ? (
         <div className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-200 border-dashed rounded-xl p-6 text-center">
-          子供がいる場合は「+ 子供を追加」を押して、出産時の親年齢と進学プラン（小・中・高・大学・大学院）を設定してください。
+          子供がいる場合や将来の予定を入れたい場合は「+ 子供を追加」を押して、現在年齢または生まれる予定時期と進学プランを設定してください。
           <br />
           入学金・塾代・大学院・生活費・習い事を含めた年次費用が支出に反映されます。
         </div>
@@ -3474,6 +4328,15 @@ function ChildrenSection({
         <div className="space-y-3">
           {childrenList.map((c, idx) => {
             const currentChildAge = parentCurrentAge - c.birthAtParentAge;
+            const ageInputMode: ChildAgeInputMode =
+              c.ageInputMode ?? (currentChildAge < 0 ? "birthPlan" : "currentAge");
+            const plannedBirthYears = Math.max(0, c.birthAtParentAge - parentCurrentAge);
+            const childTimingLabel =
+              ageInputMode === "birthPlan"
+                ? plannedBirthYears === 0
+                  ? "今年出生予定"
+                  : `${plannedBirthYears}年後に出生予定`
+                : `${Math.max(0, currentChildAge)}歳`;
             const lessons = c.lessons ?? [];
             const lessonMonthlyTotal = lessons.reduce(
               (sum, lesson) => sum + Math.max(0, clampNumber(lesson.monthlyCost)),
@@ -3496,9 +4359,7 @@ function ChildrenSection({
                     <span className="text-[11px] text-zinc-500">
                       現在
                       <span className="ml-1 font-semibold text-zinc-800">
-                        {currentChildAge < 0
-                          ? `${-currentChildAge}年後に出生`
-                          : `${currentChildAge}歳`}
+                        {childTimingLabel}
                       </span>
                     </span>
                     <span className="text-[11px] text-zinc-500">
@@ -3517,19 +4378,75 @@ function ChildrenSection({
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <NumberField
-                    label="出産時の親年齢"
-                    unit="歳"
-                    value={c.birthAtParentAge}
-                    min={0}
-                    max={70}
-                    onChange={(v) => patch(c.id, { birthAtParentAge: v })}
-                    hint={
-                      currentChildAge < 0
-                        ? `${-currentChildAge}年後に誕生`
-                        : `現在${currentChildAge}歳`
-                    }
-                  />
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block mb-1.5">
+                      子供の時期
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {([
+                        { mode: "currentAge", label: "すでに子供がいる", sub: "現在年齢で入力" },
+                        { mode: "birthPlan", label: "これから生まれる予定", sub: "何年後かで入力" },
+                      ] as const).map((opt) => {
+                        const active = ageInputMode === opt.mode;
+                        return (
+                          <button
+                            key={opt.mode}
+                            type="button"
+                            onClick={() =>
+                              patch(c.id, {
+                                ageInputMode: opt.mode,
+                                birthAtParentAge:
+                                  opt.mode === "currentAge"
+                                    ? Math.min(c.birthAtParentAge, parentCurrentAge)
+                                    : currentChildAge >= 0
+                                      ? parentCurrentAge + 1
+                                      : c.birthAtParentAge,
+                              })
+                            }
+                            className={`text-left rounded-lg border px-3 py-2 transition-colors ${
+                              active
+                                ? "border-zinc-900 bg-zinc-900 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
+                            }`}
+                          >
+                            <span className="block text-xs font-medium">{opt.label}</span>
+                            <span className={`block text-[10px] mt-0.5 ${active ? "text-zinc-300" : "text-zinc-500"}`}>
+                              {opt.sub}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {ageInputMode === "birthPlan" ? (
+                    <NumberField
+                      label="何年後に生まれる予定"
+                      unit="年後"
+                      value={plannedBirthYears}
+                      min={0}
+                      max={50}
+                      onChange={(v) =>
+                        patch(c.id, {
+                          ageInputMode: "birthPlan",
+                          birthAtParentAge: parentCurrentAge + Math.max(0, Math.min(50, v)),
+                        })
+                      }
+                    />
+                  ) : (
+                    <NumberField
+                      label="子供の現在年齢"
+                      unit="歳"
+                      value={Math.max(0, currentChildAge)}
+                      min={0}
+                      max={60}
+                      onChange={(v) =>
+                        patch(c.id, {
+                          ageInputMode: "currentAge",
+                          birthAtParentAge: parentCurrentAge - Math.max(0, Math.min(60, v)),
+                        })
+                      }
+                    />
+                  )}
                   <SelectField
                     label="小学校"
                     value={c.elementary}
@@ -3632,6 +4549,7 @@ function ChildrenSection({
                           c.livingCosts?.[stage.key] ??
                           DEFAULT_CHILD_LIVING_COSTS[stage.key]
                         }
+                        min={0}
                         scale={10000}
                         step={1}
                         onChange={(v) =>
@@ -3853,6 +4771,7 @@ function ChildrenSection({
                                 label="月額"
                                 unit="万円/月"
                                 value={lesson.monthlyCost}
+                                min={0}
                                 scale={10000}
                                 step={0.5}
                                 onChange={(v) =>
