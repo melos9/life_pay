@@ -47,6 +47,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  other: process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+    ? { "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_CLIENT }
+    : {},
 };
 
 const JSON_LD = {
@@ -119,11 +122,6 @@ export default function RootLayout({
   const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
   return (
     <html lang="ja" className="h-full antialiased">
-      <head>
-        {adsenseClient && (
-          <meta name="google-adsense-account" content={adsenseClient} />
-        )}
-      </head>
       <body className="min-h-full">
         <script
           type="application/ld+json"
