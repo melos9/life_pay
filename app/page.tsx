@@ -1328,6 +1328,7 @@ export default function ForecastPage() {
   const [hydrated, setHydrated] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [tableScenario, setTableScenario] = useState<"normal" | "fire">("normal");
 
   useEffect(() => {
     // 1) URLハッシュ（#s=...）優先で読み込み（共有リンク経由）
@@ -1364,6 +1365,29 @@ export default function ForecastPage() {
     () => (appliedSettings ? simulate(appliedSettings) : null),
     [appliedSettings]
   );
+
+  // FIRE達成年齢で実際に本業を辞めたシナリオ（配偶者がいれば配偶者も同時期に辞める）。
+  // 通常シナリオ（result）は希望リタイア年齢ベース。比較表示用に並行計算する。
+  const fireScenario = useMemo(() => {
+    if (!appliedSettings || !result || result.fireAge === null) return null;
+    if (result.fireAge >= appliedSettings.retireAge) return null;
+    const sp = appliedSettings.spouse;
+    const spouseRetireAgeAtFire =
+      sp.enabled && result.fireAge >= sp.marryAtSelfAge
+        ? sp.ageAtMarry + (result.fireAge - sp.marryAtSelfAge)
+        : sp.retireAge;
+    const fireSettings: FireSettings = {
+      ...appliedSettings,
+      retireAge: result.fireAge,
+      spouse: sp.enabled
+        ? {
+            ...sp,
+            retireAge: Math.min(sp.retireAge, Math.max(sp.ageAtMarry, spouseRetireAgeAtFire)),
+          }
+        : sp,
+    };
+    return { settings: fireSettings, result: simulate(fireSettings) };
+  }, [appliedSettings, result]);
 
   const isDirty = useMemo(
     () =>
@@ -1696,6 +1720,7 @@ export default function ForecastPage() {
             depletionAge={result.depletionAge}
             requiredAtRetirement={result.requiredAssetsAtRetirement}
             fireThresholdAssets={result.fireThresholdAssets}
+            fireScenarioRows={fireScenario?.result.rows ?? null}
           />
         </div>
       )}
@@ -2882,12 +2907,47 @@ export default function ForecastPage() {
       </div>
 
       {/* Detail table */}
-      {inputsValid && result && result.rows.length > 0 && (
+      {inputsValid && result && result.rows.length > 0 && (() => {
+        const isFireTable = tableScenario === "fire" && fireScenario !== null;
+        const tableData = isFireTable && fireScenario ? fireScenario.result : result;
+        const tableRetireAge =
+          isFireTable && fireScenario ? fireScenario.settings.retireAge : settings.retireAge;
+        return (
         <Panel>
           <PanelHeader
             title="年次明細"
-            subtitle="全費目の内訳と年末資産"
+            subtitle={
+              isFireTable
+                ? "FIRE達成時に本業を辞めたシナリオ。配偶者がいる場合は配偶者も同時期に退職。"
+                : "希望リタイア年齢ベースの全費目内訳と年末資産"
+            }
           />
+          {fireScenario && (
+            <div className="mb-4 inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setTableScenario("normal")}
+                className={`px-3 py-1.5 rounded-md transition-colors ${
+                  !isFireTable
+                    ? "bg-white text-zinc-900 shadow-sm font-medium"
+                    : "text-zinc-500 hover:text-zinc-700"
+                }`}
+              >
+                希望リタイアシナリオ
+              </button>
+              <button
+                type="button"
+                onClick={() => setTableScenario("fire")}
+                className={`px-3 py-1.5 rounded-md transition-colors ${
+                  isFireTable
+                    ? "bg-white text-violet-700 shadow-sm font-medium"
+                    : "text-zinc-500 hover:text-zinc-700"
+                }`}
+              >
+                FIRE達成シナリオ
+              </button>
+            </div>
+          )}
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto -mx-2 px-2 print-no-scroll">
             <table className="w-full text-xs sm:text-sm whitespace-nowrap">
               <thead className="text-zinc-500 text-xs sticky top-0 bg-white/95 backdrop-blur z-10">
@@ -2909,10 +2969,10 @@ export default function ForecastPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {result.rows.map((r) => {
-                  const isRetire = r.age === settings.retireAge;
-                  const isFire = r.age === result.fireAge;
-                  const isDeplete = r.age === result.depletionAge;
+                {tableData.rows.map((r) => {
+                  const isRetire = r.age === tableRetireAge;
+                  const isFire = !isFireTable && r.age === result.fireAge;
+                  const isDeplete = r.age === tableData.depletionAge;
                   const rowBg = isDeplete
                     ? "bg-red-50"
                     : isFire
@@ -3006,7 +3066,8 @@ export default function ForecastPage() {
             </table>
           </div>
         </Panel>
-      )}
+        );
+      })()}
 
       <p className="text-xs text-zinc-400 leading-relaxed">
         ※ 教育費は文部科学省「子供の学習費調査」「学生生活調査」を参考にした標準額（年額）。塾は小4〜高3、入学金は小1・中1・高1・大1・院1の各時点で計上。子供本人の生活費と習い事は入力値を年次費用に反映します。住居費は終了年齢を超えると0（住宅ローン完済を想定）。
@@ -3599,6 +3660,7 @@ function AssetsChart({
   depletionAge,
   requiredAtRetirement,
   fireThresholdAssets,
+  fireScenarioRows,
 }: {
   rows: YearRow[];
   retireAge: number;
@@ -3607,6 +3669,7 @@ function AssetsChart({
   depletionAge: number | null;
   requiredAtRetirement: number;
   fireThresholdAssets: number | null;
+  fireScenarioRows?: YearRow[] | null;
 }) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
@@ -3624,8 +3687,12 @@ function AssetsChart({
   const maxAge = rows[rows.length - 1].age;
   const ageSpan = Math.max(1, maxAge - minAge);
 
-  const minVal = Math.min(0, ...rows.map((r) => r.endAssets));
-  const maxVal = Math.max(1, ...rows.map((r) => r.endAssets));
+  const fireRows = fireScenarioRows && fireScenarioRows.length > 0 ? fireScenarioRows : null;
+  const allEndAssets = fireRows
+    ? [...rows.map((r) => r.endAssets), ...fireRows.map((r) => r.endAssets)]
+    : rows.map((r) => r.endAssets);
+  const minVal = Math.min(0, ...allEndAssets);
+  const maxVal = Math.max(1, ...allEndAssets);
   const valSpan = maxVal - minVal || 1;
 
   function x(age: number) {
@@ -3637,6 +3704,9 @@ function AssetsChart({
 
   // Path builder: smooth area for endAssets
   const linePoints = rows.map((r) => `${x(r.age)},${y(r.endAssets)}`).join(" ");
+  const fireLinePoints = fireRows
+    ? fireRows.map((r) => `${x(r.age)},${y(r.endAssets)}`).join(" ")
+    : null;
   const areaPath = `M ${x(rows[0].age)},${y(0)} L ${rows
     .map((r) => `${x(r.age)},${y(r.endAssets)}`)
     .join(" L ")} L ${x(rows[rows.length - 1].age)},${y(0)} Z`;
@@ -3665,6 +3735,7 @@ function AssetsChart({
         </div>
         <div className="flex flex-wrap gap-3 text-[11px] text-zinc-500">
           <Legend dotClass="bg-zinc-900" label="資産推移" />
+          {fireRows && <Legend dotClass="bg-violet-500" label="FIRE達成シナリオ" />}
           <Legend dotClass="bg-amber-500" label="リタイア" />
           <Legend dotClass="bg-violet-500" label="FIRE" />
           <Legend dotClass="bg-emerald-500" label="年金開始" />
@@ -3757,6 +3828,19 @@ function AssetsChart({
             strokeLinejoin="round"
             strokeLinecap="round"
           />
+
+          {/* FIRE scenario line (dashed, violet) */}
+          {fireLinePoints && (
+            <polyline
+              points={fireLinePoints}
+              fill="none"
+              stroke="#8b5cf6"
+              strokeWidth="1.75"
+              strokeDasharray="5 3"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          )}
 
           {/* Horizontal reference line: FIRE達成時の資産水準（あれば）、なければ4%ルールの必要資産 */}
           {(() => {
@@ -3864,6 +3948,16 @@ function AssetsChart({
                 stroke="#18181b"
                 strokeWidth="2"
               />
+              {fireRows && hoverIdx !== null && fireRows[hoverIdx] && (
+                <circle
+                  cx={x(fireRows[hoverIdx].age)}
+                  cy={y(fireRows[hoverIdx].endAssets)}
+                  r="4"
+                  fill="#fff"
+                  stroke="#8b5cf6"
+                  strokeWidth="2"
+                />
+              )}
             </g>
           )}
         </svg>
@@ -3888,6 +3982,13 @@ function AssetsChart({
               </span>
             </div>
             <Row label="年末資産" value={formatCurrency(Math.round(hover.endAssets))} bold />
+            {fireRows && hoverIdx !== null && fireRows[hoverIdx] && (
+              <Row
+                label="FIRE達成シナリオ"
+                value={formatCurrency(Math.round(fireRows[hoverIdx].endAssets))}
+                tone="violet"
+              />
+            )}
             <Row label="収入＋年金" value={formatCurrency(Math.round(hover.income + hover.pension))} tone="emerald" />
             <Row label="支出" value={formatCurrency(Math.round(hover.expense))} tone="red" />
             {hover.childrenCost > 0 && (
@@ -4181,7 +4282,7 @@ function Row({
 }: {
   label: string;
   value: string;
-  tone?: "emerald" | "red" | "orange";
+  tone?: "emerald" | "red" | "orange" | "violet";
   bold?: boolean;
   small?: boolean;
 }) {
@@ -4192,7 +4293,9 @@ function Row({
         ? "text-red-600"
         : tone === "orange"
           ? "text-amber-600"
-          : "text-zinc-900";
+          : tone === "violet"
+            ? "text-violet-600"
+            : "text-zinc-900";
   return (
     <div className={`flex items-baseline justify-between gap-3 ${small ? "text-[10px]" : ""}`}>
       <span className="text-zinc-500">{label}</span>
