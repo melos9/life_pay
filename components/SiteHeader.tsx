@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const NAV_LINKS = [
@@ -14,12 +13,7 @@ const NAV_LINKS = [
 
 export function SiteHeader({ siteName }: { siteName: string }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;

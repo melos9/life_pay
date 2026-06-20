@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -155,16 +154,7 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-xs text-zinc-500 border-t border-zinc-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <span>© {new Date().getFullYear()} {SITE_NAME}</span>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <Link href="/" className="hover:text-zinc-900">シミュレーター</Link>
-              <Link href="/how-to-use" className="hover:text-zinc-900">使い方</Link>
-              <Link href="/disclaimer" className="hover:text-zinc-900">免責事項</Link>
-              <Link href="/privacy-policy" className="hover:text-zinc-900">プライバシーポリシー</Link>
-              <Link href="/contact" className="hover:text-zinc-900">お問い合わせ</Link>
-            </div>
-          </div>
+          <span>© {new Date().getFullYear()} {SITE_NAME}</span>
         </footer>
       </body>
     </html>

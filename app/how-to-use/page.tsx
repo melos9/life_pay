@@ -48,20 +48,9 @@ export default function HowToUsePage() {
         にまとめています。ご利用前にご確認ください。
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-3 text-sm">
-        <Link href="/" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          シミュレーターへ戻る
-        </Link>
-        <Link href="/privacy-policy" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          プライバシーポリシー
-        </Link>
-        <Link href="/disclaimer" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          免責事項
-        </Link>
-        <Link href="/contact" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          お問い合わせ
-        </Link>
-      </div>
+      {/* AdSense審査通過後に有効化（先頭で import { AdSlot } from "@/components/AdSlot" を追加）
+      <AdSlot slot="0000000002" />
+      */}
     </section>
   );
 }

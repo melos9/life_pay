@@ -72,12 +72,6 @@ export default function PrivacyPolicyPage() {
         </Link>
         からご連絡ください。
       </p>
-
-      <div className="mt-8">
-        <Link href="/" className="text-sm text-zinc-700 underline underline-offset-2 hover:text-zinc-900">
-          シミュレーターへ戻る
-        </Link>
-      </div>
     </section>
   );
 }

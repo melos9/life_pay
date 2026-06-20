@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "免責事項",
@@ -28,18 +27,6 @@ export default function DisclaimerPage() {
         <li>掲載情報の正確性には配慮していますが、正確性・完全性・信頼性を保証するものではありません。</li>
         <li>本シミュレーションの内容は、予告なく変更する場合があります。</li>
       </ul>
-
-      <div className="mt-8 flex flex-wrap gap-3 text-sm">
-        <Link href="/" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          シミュレーターへ戻る
-        </Link>
-        <Link href="/privacy-policy" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          プライバシーポリシー
-        </Link>
-        <Link href="/contact" className="rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 hover:bg-zinc-50">
-          お問い合わせ
-        </Link>
-      </div>
     </section>
   );
 }
