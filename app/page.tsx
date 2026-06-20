@@ -1366,25 +1366,14 @@ export default function ForecastPage() {
     [appliedSettings]
   );
 
-  // FIRE達成年齢で実際に本業を辞めたシナリオ（配偶者がいれば配偶者も同時期に辞める）。
+  // FIRE達成年齢で本人だけが本業を辞めたシナリオ（配偶者は入力された希望リタイア年齢のまま）。
   // 通常シナリオ（result）は希望リタイア年齢ベース。比較表示用に並行計算する。
   const fireScenario = useMemo(() => {
     if (!appliedSettings || !result || result.fireAge === null) return null;
     if (result.fireAge >= appliedSettings.retireAge) return null;
-    const sp = appliedSettings.spouse;
-    const spouseRetireAgeAtFire =
-      sp.enabled && result.fireAge >= sp.marryAtSelfAge
-        ? sp.ageAtMarry + (result.fireAge - sp.marryAtSelfAge)
-        : sp.retireAge;
     const fireSettings: FireSettings = {
       ...appliedSettings,
       retireAge: result.fireAge,
-      spouse: sp.enabled
-        ? {
-            ...sp,
-            retireAge: Math.min(sp.retireAge, Math.max(sp.ageAtMarry, spouseRetireAgeAtFire)),
-          }
-        : sp,
     };
     return { settings: fireSettings, result: simulate(fireSettings) };
   }, [appliedSettings, result]);
@@ -2918,7 +2907,7 @@ export default function ForecastPage() {
             title="年次明細"
             subtitle={
               isFireTable
-                ? "FIRE達成時に本業を辞めたシナリオ。配偶者がいる場合は配偶者も同時期に退職。"
+                ? "FIRE達成時に本人だけ本業を辞めたシナリオ。配偶者がいる場合は入力された希望リタイア年齢まで就労を継続。"
                 : "希望リタイア年齢ベースの全費目内訳と年末資産"
             }
           />
