@@ -1572,7 +1572,7 @@ export default function ForecastPage() {
               Life Planner
             </div>
             <h1 className="text-xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900">
-              夢は見ない！FIRE特化型資産シミュレーター
+              もう夢なんてみない、FIRE特化型資産シミュレーター
             </h1>
             <p className="text-zinc-600 mt-2 text-xs sm:text-sm leading-relaxed max-w-2xl">
               収入・生活費・教育費・住居費を入力すると、将来の資産推移と必要資金の目安をすぐに確認できます。
