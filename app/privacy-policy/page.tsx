@@ -4,7 +4,7 @@ import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "プライバシーポリシー",
   description:
-    "ライフプラン資産シミュレーターにおける個人情報・アクセス情報の取り扱い方針です。",
+    "本シミュレーターにおける個人情報・アクセス情報の取り扱い方針です。",
   path: "/privacy-policy",
 });
 
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
       <section className="mx-auto max-w-3xl rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 lg:p-8">
       <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">プライバシーポリシー</h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-700">
-        ライフプラン資産シミュレーター（以下「本サービス」）における、情報の取り扱い方針をご案内します。
+        本サービスにおける、情報の取り扱い方針をご案内します。
       </p>
 
       <h2 className="mt-6 text-lg font-semibold text-zinc-900">1. 入力データとサーバー送信について</h2>

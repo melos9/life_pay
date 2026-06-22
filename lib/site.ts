@@ -1,23 +1,25 @@
-export const SITE_NAME = "ライフプラン資産シミュレーター";
+export const SITE_NAME = "もう夢なんてみない、FIRE特化型資産シミュレーター";
 
 export const SITE_DESCRIPTION =
-  "ライフプラン資産シミュレーターは、FIRE・老後資金・教育費までまとめて無料で試算できる資産シミュレーターです。年齢・年収・支出・住居費・子育て費を入力すると、将来の資産推移と必要資金の目安をグラフで確認できます。";
+  "もう夢なんてみない、FIRE特化型資産シミュレーターは、FIRE・老後資金・教育費までまとめて無料で試算できる資産シミュレーターです。年齢・年収・支出・住居費・子育て費を入力すると、将来の資産推移とFIREに必要な資金の目安をグラフで確認できます。";
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://melos9.github.io/life_pay";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://life-pay-simulator.com";
 
 export const OG_LOCALE = "ja_JP";
 
 export const DEFAULT_OG_TITLE =
-  "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算";
+  "もう夢なんてみない、FIRE特化型資産シミュレーター｜FIRE・老後資金を無料試算";
 
 export const SITE_KEYWORDS = [
   "FIRE",
   "fire",
   "FIREとは",
   "fireとは",
-  "ライフプラン資産シミュレーター",
-  "ライフプラン資産シュミレーター",
+  "FIREシミュレーター",
+  "FIREシミュレーション",
+  "もう夢なんてみない",
+  "夢なんてみない",
   "資産シミュレーター",
   "ライフプラン シミュレーター",
   "ライフプラン シュミレーター",

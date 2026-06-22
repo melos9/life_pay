@@ -3,7 +3,7 @@ import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "免責事項",
   description:
-    "ライフプラン資産シミュレーターの利用上の注意、非保証事項、責任範囲についてご案内します。",
+    "シミュレーターの利用上の注意、非保証事項、責任範囲についてご案内します。",
   path: "/disclaimer",
 });
 

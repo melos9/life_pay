@@ -12,7 +12,7 @@ import {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ライフプラン資産シミュレーター｜FIRE・老後資金を無料試算（結婚・子育て対応）",
+    default: "FIRE特化 資産シミュレーター｜FIRE・老後資金を無料試算（結婚・子育て対応）",
     template: `%s｜${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,

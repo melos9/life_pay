@@ -3,7 +3,7 @@ import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "お問い合わせ",
   description:
-    "ライフプラン資産シミュレーターに関するご意見・不具合報告・ご要望の連絡先です。",
+    "FIRE特化 資産シミュレーターに関するご意見・不具合報告・ご要望の連絡先です。",
   path: "/contact",
 });
 

@@ -4,7 +4,7 @@ import { pageMetadata, breadcrumbJsonLd } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "使い方",
   description:
-    "ライフプラン資産シミュレーターの使い方。入力手順、結果の見方、注意点と免責事項をまとめています。",
+    "本シミュレーターの使い方。入力手順、結果の見方、注意点と免責事項をまとめています。",
   path: "/how-to-use",
 });
 
