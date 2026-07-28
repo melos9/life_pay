@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import {
@@ -138,7 +139,27 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-xs text-zinc-500 border-t border-zinc-200">
-          <span>© {new Date().getFullYear()} {SITE_NAME}</span>
+          <nav aria-label="フッターナビゲーション" className="flex flex-wrap gap-x-4 gap-y-2">
+            <Link href="/" className="hover:text-zinc-900 transition-colors">
+              シミュレーター
+            </Link>
+            <Link href="/guide" className="hover:text-zinc-900 transition-colors">
+              FIREガイド
+            </Link>
+            <Link href="/how-to-use" className="hover:text-zinc-900 transition-colors">
+              使い方
+            </Link>
+            <Link href="/disclaimer" className="hover:text-zinc-900 transition-colors">
+              免責事項
+            </Link>
+            <Link href="/privacy-policy" className="hover:text-zinc-900 transition-colors">
+              プライバシーポリシー
+            </Link>
+            <Link href="/contact" className="hover:text-zinc-900 transition-colors">
+              お問い合わせ
+            </Link>
+          </nav>
+          <span className="mt-4 block">© {new Date().getFullYear()} {SITE_NAME}</span>
         </footer>
       </body>
     </html>

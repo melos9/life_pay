@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 const NAV_LINKS = [
   { href: "/", label: "シミュレーター" },
+  { href: "/guide", label: "ガイド" },
   { href: "/how-to-use", label: "使い方" },
   { href: "/disclaimer", label: "免責事項" },
   { href: "/privacy-policy", label: "プライバシーポリシー" },

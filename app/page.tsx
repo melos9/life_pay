@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { GUIDES } from "@/lib/guides";
 // import { AdSlot } from "../components/AdSlot"; // AdSense審査通過後に有効化
 
 // =============================================================================
@@ -3098,6 +3099,37 @@ export default function ForecastPage() {
             <li>月30万円で暮らす場合 → 年360万円 × 25 = <strong>9,000万円</strong></li>
             <li>月40万円で暮らす場合 → 年480万円 × 25 = <strong>1.2億円</strong></li>
           </ul>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold text-zinc-900 mb-2">
+            もっと詳しく知りたい方へ｜FIREガイド
+          </h2>
+          <p className="text-sm text-zinc-700 leading-relaxed mb-3">
+            FIREの意味や種類、4%ルールの根拠、必要資金の計算手順、教育費の目安、達成までのロードマップを、
+            はじめての方にもわかりやすく解説しています。
+          </p>
+          <ul className="text-sm list-disc pl-5 space-y-1.5">
+            {GUIDES.map((g) => (
+              <li key={g.slug}>
+                <Link
+                  href={`/guide/${g.slug}`}
+                  className="text-zinc-800 underline underline-offset-2 hover:text-zinc-950"
+                >
+                  {g.heading}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm">
+            <Link
+              href="/guide"
+              className="inline-flex items-center gap-1 font-medium text-zinc-900 underline underline-offset-2"
+            >
+              FIREガイドの記事一覧を見る
+              <span aria-hidden>→</span>
+            </Link>
+          </p>
         </div>
 
       </section>

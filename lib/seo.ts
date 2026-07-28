@@ -47,3 +47,37 @@ export function breadcrumbJsonLd(items: BreadcrumbItem[]) {
     })),
   };
 }
+
+type ArticleMetaInput = {
+  headline: string;
+  description: string;
+  path: string;
+  datePublished: string;
+  dateModified?: string;
+};
+
+/**
+ * ガイド記事向けの Article 構造化データ。
+ * 発行者・更新日を明示し、コンテンツの信頼性シグナルを補強する。
+ */
+export function articleJsonLd({
+  headline,
+  description,
+  path,
+  datePublished,
+  dateModified,
+}: ArticleMetaInput) {
+  const url = `${SITE_URL}${path}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    description,
+    inLanguage: "ja",
+    datePublished,
+    dateModified: dateModified ?? datePublished,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+  };
+}
