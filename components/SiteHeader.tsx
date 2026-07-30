@@ -53,21 +53,32 @@ export function SiteHeader({ siteName }: { siteName: string }) {
             </Link>
           ))}
         </nav>
-        <div className="md:hidden relative" ref={menuRef}>
+        <div className="md:hidden relative shrink-0" ref={menuRef}>
           <button
             type="button"
             aria-expanded={open}
             aria-controls="site-mobile-nav"
             aria-label={open ? "メニューを閉じる" : "メニューを開く"}
             onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50 transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
           >
-            <span aria-hidden className="inline-flex flex-col gap-[3px]">
-              <span className="block w-4 h-[1.5px] bg-zinc-700" />
-              <span className="block w-4 h-[1.5px] bg-zinc-700" />
-              <span className="block w-4 h-[1.5px] bg-zinc-700" />
+            <span aria-hidden className="relative block h-4 w-5">
+              <span
+                className={`absolute left-0 block h-[1.5px] w-5 bg-zinc-700 transition-all duration-200 ${
+                  open ? "top-1/2 -translate-y-1/2 rotate-45" : "top-[3px]"
+                }`}
+              />
+              <span
+                className={`absolute left-0 top-1/2 block h-[1.5px] w-5 -translate-y-1/2 bg-zinc-700 transition-opacity duration-200 ${
+                  open ? "opacity-0" : "opacity-100"
+                }`}
+              />
+              <span
+                className={`absolute left-0 block h-[1.5px] w-5 bg-zinc-700 transition-all duration-200 ${
+                  open ? "top-1/2 -translate-y-1/2 -rotate-45" : "bottom-[3px]"
+                }`}
+              />
             </span>
-            メニュー
           </button>
           {open && (
             <nav

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GUIDES } from "@/lib/guides";
 // import { AdSlot } from "../components/AdSlot"; // AdSense審査通過後に有効化
 
@@ -1330,6 +1330,9 @@ export default function ForecastPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [tableScenario, setTableScenario] = useState<"normal" | "fire">("normal");
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const chartRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollRef = useRef(false);
 
   useEffect(() => {
     // 1) URLハッシュ（#s=...）優先で読み込み（共有リンク経由）
@@ -1366,6 +1369,14 @@ export default function ForecastPage() {
     () => (appliedSettings ? simulate(appliedSettings) : null),
     [appliedSettings]
   );
+
+  // プリセット適用などで scroll を予約した場合、チャート描画（コミット）後にスクロールする
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    pendingScrollRef.current = false;
+    if (!result) return;
+    chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [result]);
 
   // FIRE達成年齢で本人だけが本業を辞めたシナリオ（配偶者は入力された希望リタイア年齢のまま）。
   // 通常シナリオ（result）は希望リタイア年齢ベース。比較表示用に並行計算する。
@@ -1417,6 +1428,7 @@ export default function ForecastPage() {
     setSettings(DEFAULT_SETTINGS);
     // appliedSettings は null に戻して、グラフはプレビュー（サンプル）状態へ
     setAppliedSettings(null);
+    setSelectedPresetId(null);
     setShareCopied(false);
     setShareUrl(null);
   }
@@ -1461,8 +1473,11 @@ export default function ForecastPage() {
     const next = { ...DEFAULT_SETTINGS, ...p.patch } as FireSettings;
     setSettings(next);
     setAppliedSettings(next);
+    setSelectedPresetId(p.id);
     setShareCopied(false);
     setShareUrl(null);
+    // チャート描画（コミット）後にグラフまでスクロールするよう予約
+    pendingScrollRef.current = true;
   }
 
   const inputsValid =
@@ -1626,7 +1641,12 @@ export default function ForecastPage() {
               key={p.id}
               type="button"
               onClick={() => applyPreset(p)}
-              className="text-left px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-900 hover:bg-zinc-50 transition-colors"
+              aria-pressed={selectedPresetId === p.id}
+              className={`text-left px-3 py-2 rounded-lg border transition-all active:scale-[0.97] ${
+                selectedPresetId === p.id
+                  ? "border-zinc-900 bg-zinc-50 ring-1 ring-zinc-900"
+                  : "border-zinc-200 hover:border-zinc-900 hover:bg-zinc-50"
+              }`}
             >
               <div className="text-xs font-medium text-zinc-900">{p.label}</div>
               <div className="text-[10px] text-zinc-500 mt-0.5">{p.description}</div>
@@ -1701,7 +1721,7 @@ export default function ForecastPage() {
 
       {/* Chart */}
       {inputsValid && result && appliedSettings && result.rows.length > 0 && (
-        <div className="print-avoid-break">
+        <div ref={chartRef} className="print-avoid-break scroll-mt-20">
           <AssetsChart
             rows={result.rows}
             retireAge={appliedSettings.retireAge}
