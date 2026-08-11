@@ -3152,6 +3152,81 @@ export default function ForecastPage() {
           </p>
         </div>
 
+        <div>
+          <h2 className="text-xl font-semibold text-zinc-900 mb-3">
+            FIRE・資産シミュレーションのよくある質問
+          </h2>
+          <dl className="divide-y divide-zinc-100">
+            <div className="py-4">
+              <dt className="text-sm font-semibold text-zinc-900">
+                Q. FIREとは何ですか？
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-zinc-700">
+                FIRE（Financial Independence, Retire
+                Early）とは、十分な資産を築いて運用益で生活し、働き方を自由に選べる状態を指します。
+                一般に年間支出の25倍の資産を作り、年4%以内で取り崩せば資産が長持ちしやすいと言われます（4%ルール）。
+                「二度と働かないこと」ではなく、お金のために働く必要がない状態＝選択肢を持つことがFIREの本質です。
+                詳しくは{" "}
+                <Link href="/guide/fire-toha" className="underline underline-offset-2 hover:text-zinc-950">
+                  FIREとは？の記事
+                </Link>{" "}
+                で解説しています。
+              </dd>
+            </div>
+            <div className="py-4">
+              <dt className="text-sm font-semibold text-zinc-900">
+                Q. FIREにはいくら必要ですか？
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-zinc-700">
+                目安は「リタイア後の年間支出 ×
+                25倍」です。月25万円で暮らすなら年300万円 × 25 =
+                7,500万円が必要資産の目安になります。結婚・子育て・住居費・教育費を含めるとさらに増えるため、
+                本シミュレーターで個別に試算するのが確実です。計算手順は{" "}
+                <Link href="/guide/hitsuyou-shikin" className="underline underline-offset-2 hover:text-zinc-950">
+                  必要資金の計算の記事
+                </Link>{" "}
+                で紹介しています。
+              </dd>
+            </div>
+            <div className="py-4">
+              <dt className="text-sm font-semibold text-zinc-900">
+                Q. 結婚や子育てがあってもFIREできますか？
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-zinc-700">
+                可能ですが、教育費・住居費を含めた現実的な試算が欠かせません。本シミュレーターは、
+                子供の人数・進学プラン（公立／私立、大学・大学院）・塾代・配偶者の収入まで反映して必要資産を算出します。
+                教育費の目安は{" "}
+                <Link href="/guide/kyouiku-hi" className="underline underline-offset-2 hover:text-zinc-950">
+                  子供の教育費の記事
+                </Link>{" "}
+                をご覧ください。
+              </dd>
+            </div>
+            <div className="py-4">
+              <dt className="text-sm font-semibold text-zinc-900">
+                Q. 入力したデータは保存・送信されますか？
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-zinc-700">
+                入力したシミュレーションデータはお使いのブラウザ内にのみ保存され、サーバーへは送信されません。
+                個人を特定する情報の入力も不要です。詳しくは{" "}
+                <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-zinc-950">
+                  プライバシーポリシー
+                </Link>{" "}
+                をご確認ください。
+              </dd>
+            </div>
+            <div className="py-4">
+              <dt className="text-sm font-semibold text-zinc-900">
+                Q. このシミュレーターは無料で使えますか？
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-zinc-700">
+                はい、登録不要ですべての機能を無料でご利用いただけます。年齢・年収・支出・年金・家族構成を入力するだけで、
+                将来の資産推移とFIREに必要な資金の目安をグラフで確認できます。
+              </dd>
+            </div>
+          </dl>
+        </div>
+
       </section>
     </div>
   );
