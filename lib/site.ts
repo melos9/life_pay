@@ -35,7 +35,7 @@ export const SITE_KEYWORDS = [
   "リーンFIRE",
   "ファットFIRE",
   "教育費",
-  "FIRE いくら必要",
+  "FIRE いくら",
   "資産形成",
   "ライフプラン",
   "4%ルール",
