@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 import { GUIDES } from "@/lib/guides";
 
 export const dynamic = "force-static";
@@ -9,13 +9,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const guideEntries: MetadataRoute.Sitemap = [
     {
-      url: `${SITE_URL}/guide`,
+      url: absoluteUrl("/guide"),
       lastModified,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     ...GUIDES.map((g) => ({
-      url: `${SITE_URL}/guide/${g.slug}`,
+      url: absoluteUrl(`/guide/${g.slug}`),
       lastModified: new Date(g.updated),
       changeFrequency: "monthly" as const,
       priority: 0.7,
@@ -24,32 +24,32 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: `${SITE_URL}/`,
+      url: absoluteUrl("/"),
       lastModified,
       changeFrequency: "weekly",
       priority: 1,
     },
     ...guideEntries,
     {
-      url: `${SITE_URL}/how-to-use`,
+      url: absoluteUrl("/how-to-use"),
       lastModified,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
-      url: `${SITE_URL}/disclaimer`,
+      url: absoluteUrl("/disclaimer"),
       lastModified,
       changeFrequency: "yearly",
       priority: 0.4,
     },
     {
-      url: `${SITE_URL}/privacy-policy`,
+      url: absoluteUrl("/privacy-policy"),
       lastModified,
       changeFrequency: "yearly",
       priority: 0.4,
     },
     {
-      url: `${SITE_URL}/contact`,
+      url: absoluteUrl("/contact"),
       lastModified,
       changeFrequency: "yearly",
       priority: 0.4,

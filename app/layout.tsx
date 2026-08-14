@@ -8,12 +8,13 @@ import {
   SITE_KEYWORDS,
   SITE_NAME,
   SITE_URL,
+  absoluteUrl,
 } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "FIRE特化 資産シミュレーター｜FIRE・老後資金を無料試算（結婚・子育て対応）",
+    default: "FIRE・老後資金シミュレーター｜無料で将来の資産推移を試算",
     template: `%s｜${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   alternates: {
-    canonical: "/",
+    canonical: absoluteUrl("/"),
   },
   other: process.env.NEXT_PUBLIC_ADSENSE_CLIENT
     ? { "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_CLIENT }
@@ -58,7 +59,7 @@ const JSON_LD = {
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
-      url: SITE_URL,
+      url: absoluteUrl("/"),
       name: SITE_NAME,
       description: SITE_DESCRIPTION,
       inLanguage: "ja",
@@ -68,13 +69,13 @@ const JSON_LD = {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: SITE_NAME,
-      url: SITE_URL,
+      url: absoluteUrl("/"),
     },
     {
       "@type": "WebApplication",
       "@id": `${SITE_URL}/#webapp`,
       name: SITE_NAME,
-      url: SITE_URL,
+      url: absoluteUrl("/"),
       applicationCategory: "FinanceApplication",
       operatingSystem: "Web",
       description: SITE_DESCRIPTION,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { GUIDES } from "@/lib/guides";
 
@@ -8,11 +8,11 @@ export const metadata: Metadata = {
   title: "FIREガイド｜早期リタイア・資産形成の基礎知識",
   description:
     "FIRE（経済的自立と早期リタイア）を目指す人向けの解説記事一覧。FIREの意味と種類、4%ルール、必要資金の計算、教育費、達成までのロードマップまで、はじめての人にもわかりやすくまとめています。",
-  alternates: { canonical: "/guide" },
+  alternates: { canonical: absoluteUrl("/guide") },
   openGraph: {
     type: "website",
     locale: "ja_JP",
-    url: `${SITE_URL}/guide`,
+    url: absoluteUrl("/guide"),
     siteName: SITE_NAME,
     title: `FIREガイド｜早期リタイア・資産形成の基礎知識｜${SITE_NAME}`,
     description:
@@ -31,7 +31,7 @@ const ITEM_LIST_JSON_LD = {
   itemListElement: GUIDES.map((g, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    url: `${SITE_URL}/guide/${g.slug}`,
+    url: absoluteUrl(`/guide/${g.slug}`),
     name: g.heading,
   })),
 };

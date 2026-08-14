@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
 
 type PageMetaInput = {
   title: string;
@@ -12,11 +12,11 @@ type PageMetaInput = {
  * title は layout 側の template により自動で `｜${SITE_NAME}` が付与される。
  */
 export function pageMetadata({ title, description, path }: PageMetaInput): Metadata {
-  const url = `${SITE_URL}${path}`;
+  const url = absoluteUrl(path);
   return {
     title,
     description,
-    alternates: { canonical: path },
+    alternates: { canonical: url },
     openGraph: {
       type: "article",
       locale: "ja_JP",
@@ -43,7 +43,7 @@ export function breadcrumbJsonLd(items: BreadcrumbItem[]) {
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: `${SITE_URL}${item.path}`,
+      item: absoluteUrl(item.path),
     })),
   };
 }
@@ -67,7 +67,7 @@ export function articleJsonLd({
   datePublished,
   dateModified,
 }: ArticleMetaInput) {
-  const url = `${SITE_URL}${path}`;
+  const url = absoluteUrl(path);
   return {
     "@context": "https://schema.org",
     "@type": "Article",

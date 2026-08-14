@@ -131,7 +131,7 @@ export default function SideFirePage() {
               ※ 年4%で取り崩す前提の「25倍の法則」による単純化した目安です。税金・社会保険料・インフレ・
               相場変動は考慮していません。4%ルールの前提と限界は{" "}
               <Link href="/guide/4percent-rule" className="underline underline-offset-2 hover:text-zinc-700">
-                こちらの記事
+                4%ルールと25倍の法則の記事
               </Link>{" "}
               で解説しています。
             </p>
