@@ -1625,14 +1625,29 @@ export default function ForecastPage() {
 
       {/* プリセット：初見ユーザーが触りやすいテンプレート */}
       <div className="no-print rounded-2xl border border-zinc-200 bg-white p-4 lg:p-5">
-        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-          <div>
-            <div className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
-              プリセットから始める
+        <div className="mb-4">
+          <div className="text-sm font-semibold text-zinc-800 mb-0.5">
+            まず、近いプランを選んでください
+          </div>
+          <p className="text-xs text-zinc-500">
+            クリックすると入力欄が自動入力されます。後から自由に変更できます。
+          </p>
+          {/* 使い方ステップ */}
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] overflow-x-auto pb-0.5">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="w-5 h-5 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
+              <span className="font-medium text-zinc-700">プランを選ぶ</span>
             </div>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              代表的なライフプランを1クリックで読み込み（後から自由に編集できます）
-            </p>
+            <span className="text-zinc-300 shrink-0">→</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-500 flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
+              <span className="text-zinc-500">数字を調整する</span>
+            </div>
+            <span className="text-zinc-300 shrink-0">→</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-500 flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
+              <span className="text-zinc-500">「計算する」で試算</span>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1990,20 +2005,15 @@ export default function ForecastPage() {
             </div>
           </div>
 
-          {/* グレー半透明オーバーレイ（チャート全体をサンプル化） */}
-          <div className="absolute inset-0 bg-zinc-200/35 backdrop-blur-[1px] pointer-events-none rounded-2xl" />
+          {/* ごく薄いオーバーレイ（サンプルと示す程度、グラフは見えるまま） */}
+          <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-2xl" />
 
-          {/* 中央オーバーレイ案内 */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
-            <div className="bg-white/95 backdrop-blur-sm border border-emerald-200 rounded-xl px-5 py-4 shadow-lg text-center max-w-md">
-              <p className="text-sm text-zinc-700 leading-relaxed">
-                スクロールして各項目を入力し、
-                <span className="font-semibold text-zinc-900">「計算する」</span>
-                を押すと、資産推移と収入・支出の推移グラフが表示されます。
-              </p>
-              <p className="mt-2 text-[11px] text-zinc-500">
-                ※ 下のグラフは表示イメージのサンプルです。あなたの計算結果ではありません。
-              </p>
+          {/* 下部スリムバナー */}
+          <div className="absolute bottom-3 inset-x-3 pointer-events-none">
+            <div className="bg-zinc-900/75 backdrop-blur-sm rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-white/90">
+              <span>入力して</span>
+              <span className="font-semibold text-white">「計算する」</span>
+              <span>を押すと、このグラフがあなたの試算結果に切り替わります</span>
             </div>
           </div>
         </div>
