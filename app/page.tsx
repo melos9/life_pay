@@ -351,222 +351,12 @@ const DEFAULT_SETTINGS: FireSettings = {
 // プリセット（初見ユーザー向けのライフプランテンプレート）
 // =============================================================================
 
-interface Preset {
-  id: string;
-  label: string;
-  description: string;
-  patch: Partial<FireSettings>;
-}
-
 /** 国民年金の満額（令和8年度の老齢基礎年金満額：月70,608円 × 12 = 847,296円/年、40年加入） */
 const KOKUMIN_NENKIN_FULL = 847_296;
 /** 厚生年金の報酬比例部分の保険料乘率（令和以降、5.481/1000を適用）。 */
 const KOUSEI_NENKIN_RATE = 5.481 / 1000;
 /** 厚生年金の平均標準報酬月額の上限（65万円）。 */
 const KOUSEI_NENKIN_MAX_MONTHLY = 650_000;
-
-/** プリセット用に厚生年金加入前提で年金額を計算 */
-function presetPension(annualIncomeNet: number, retireAge: number, workStartAge = 22): number {
-  return estimateCompanyEmployeePensionBreakdown(annualIncomeNet, workStartAge, retireAge, true).totalAnnual;
-}
-
-const PRESETS: Preset[] = [
-  {
-    id: "single",
-    label: "独身・賃貸",
-    description: "30歳・手取り280万・家賃7.5万円",
-    patch: {
-      currentAge: 30,
-      retireAge: 65,
-      annualIncome: 2_800_000,
-      currentAssets: 1_000_000,
-      monthlyLiving: 90_000,
-      housingType: "賃貸",
-      monthlyHousing: 75_000,
-      monthlyLivingRetired: 90_000,
-      monthlyHousingRetired: 75_000,
-      otherAnnual: 240_000,
-      otherAnnualRetired: 240_000,
-      children: [],
-      sideIncomeAnnual: 0,
-      hasKousei: true,
-      pensionAnnual: presetPension(2_800_000, 65),
-      spouse: { ...DEFAULT_SETTINGS.spouse, enabled: false },
-    },
-  },
-  {
-    id: "single-owner",
-    label: "独身・持ち家",
-    description: "30歳・手取り300万・ローン月9万円（35年）",
-    patch: {
-      currentAge: 30,
-      retireAge: 65,
-      annualIncome: 3_000_000,
-      currentAssets: 1_000_000,
-      monthlyLiving: 90_000,
-      housingType: "持ち家",
-      monthlyHousing: 90_000,
-      housingEndAge: 65,
-      monthlyHousingMaintenance: 20_000,
-      monthlyLivingRetired: 90_000,
-      monthlyHousingRetired: 90_000,
-      otherAnnual: 240_000,
-      otherAnnualRetired: 240_000,
-      children: [],
-      sideIncomeAnnual: 0,
-      hasKousei: true,
-      pensionAnnual: presetPension(3_000_000, 65),
-      spouse: { ...DEFAULT_SETTINGS.spouse, enabled: false },
-    },
-  },
-  {
-    id: "dinks",
-    label: "共働きDINKs",
-    description: "夫婦+子なし・世帯700万",
-    patch: {
-      currentAge: 32,
-      retireAge: 65,
-      annualIncome: 4_300_000,
-      currentAssets: 1_500_000,
-      monthlyLiving: 240_000,
-      housingType: "賃貸",
-      monthlyHousing: 130_000,
-      monthlyLivingRetired: 220_000,
-      monthlyHousingRetired: 100_000,
-      otherAnnual: 500_000,
-      otherAnnualRetired: 400_000,
-      children: [],
-      sideIncomeAnnual: 0,
-      hasKousei: true,
-      pensionAnnual: presetPension(4_300_000, 65),
-      spouse: {
-        ...DEFAULT_SETTINGS.spouse,
-        enabled: true,
-        marryAtSelfAge: 30,
-        ageAtMarry: 30,
-        annualIncome: 2_700_000,
-        retireAge: 65,
-        hasKousei: true,
-        pensionAnnual: presetPension(2_700_000, 65),
-        pensionStartAge: 65,
-      },
-    },
-  },
-  {
-    id: "child1",
-    label: "子1人世帯",
-    description: "夫婦+子1人・世帯720万・公立中心",
-    patch: {
-      currentAge: 33,
-      retireAge: 65,
-      annualIncome: 4_800_000,
-      currentAssets: 1_500_000,
-      monthlyLiving: 260_000,
-      housingType: "賃貸",
-      monthlyHousing: 130_000,
-      monthlyLivingRetired: 200_000,
-      monthlyHousingRetired: 95_000,
-      otherAnnual: 450_000,
-      otherAnnualRetired: 360_000,
-      children: [
-        DEFAULT_CHILD(
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : "preset-child-1",
-          "子1",
-          32
-        ),
-      ],
-      sideIncomeAnnual: 0,
-      hasKousei: true,
-      pensionAnnual: presetPension(4_800_000, 65),
-      spouse: {
-        ...DEFAULT_SETTINGS.spouse,
-        enabled: true,
-        marryAtSelfAge: 30,
-        ageAtMarry: 30,
-        annualIncome: 2_400_000,
-        retireAge: 65,
-        hasKousei: true,
-        pensionAnnual: presetPension(2_400_000, 65),
-        pensionStartAge: 65,
-      },
-    },
-  },
-  {
-    id: "child2",
-    label: "子2人世帯",
-    description: "夫婦+子2人・持ち家・世帯860万",
-    patch: {
-      currentAge: 33,
-      retireAge: 65,
-      annualIncome: 5_600_000,
-      currentAssets: 2_000_000,
-      monthlyLiving: 300_000,
-      housingType: "持ち家",
-      monthlyHousing: 110_000,
-      housingEndAge: 67,
-      monthlyHousingMaintenance: 20_000,
-      monthlyLivingRetired: 220_000,
-      monthlyHousingRetired: 110_000,
-      otherAnnual: 540_000,
-      otherAnnualRetired: 420_000,
-      children: [
-        DEFAULT_CHILD(
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : "preset-child2-1",
-          "子1",
-          30
-        ),
-        DEFAULT_CHILD(
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : "preset-child2-2",
-          "子2",
-          33
-        ),
-      ],
-      sideIncomeAnnual: 0,
-      hasKousei: true,
-      pensionAnnual: presetPension(5_600_000, 65),
-      spouse: {
-        ...DEFAULT_SETTINGS.spouse,
-        enabled: true,
-        marryAtSelfAge: 29,
-        ageAtMarry: 29,
-        annualIncome: 3_000_000,
-        retireAge: 65,
-        hasKousei: true,
-        pensionAnnual: presetPension(3_000_000, 65),
-        pensionStartAge: 65,
-      },
-    },
-  },
-  {
-    id: "side",
-    label: "サイドFIRE",
-    description: "35歳・55歳セミリタイア・副業180万を65歳まで継続",
-    patch: {
-      currentAge: 35,
-      retireAge: 55,
-      annualIncome: 6_000_000,
-      currentAssets: 5_000_000,
-      monthlyLiving: 180_000,
-      housingType: "賃貸",
-      monthlyHousing: 75_000,
-      monthlyLivingRetired: 180_000,
-      monthlyHousingRetired: 75_000,
-      otherAnnual: 240_000,
-      otherAnnualRetired: 240_000,
-      sideIncomeAnnual: 1_800_000,
-      sideIncomeUntilAge: 65,
-      children: [],
-      hasKousei: true,
-      pensionAnnual: presetPension(6_000_000, 55),
-    },
-  },
-];
 
 /**
  * 退職所得に対する所得税・住民税・復興特別所得税の概算（円単位）。
@@ -1330,8 +1120,8 @@ export default function ForecastPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [tableScenario, setTableScenario] = useState<"normal" | "fire">("normal");
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollRef = useRef(false);
 
   useEffect(() => {
@@ -1370,12 +1160,12 @@ export default function ForecastPage() {
     [appliedSettings]
   );
 
-  // プリセット適用などで scroll を予約した場合、チャート描画（コミット）後にスクロールする
+  // 計算実行で scroll を予約した場合、結果描画（コミット）後に結果までスクロールする
   useEffect(() => {
     if (!pendingScrollRef.current) return;
     pendingScrollRef.current = false;
     if (!result) return;
-    chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    (resultRef.current ?? chartRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [result]);
 
   // FIRE達成年齢で本人だけが本業を辞めたシナリオ（配偶者は入力された希望リタイア年齢のまま）。
@@ -1403,9 +1193,8 @@ export default function ForecastPage() {
 
   function applyChanges() {
     setAppliedSettings(settings);
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    // 計算後、結果（資産結果・資産推移）までスクロールするよう予約
+    pendingScrollRef.current = true;
   }
 
   function resetSettings() {
@@ -1428,7 +1217,6 @@ export default function ForecastPage() {
     setSettings(DEFAULT_SETTINGS);
     // appliedSettings は null に戻して、グラフはプレビュー（サンプル）状態へ
     setAppliedSettings(null);
-    setSelectedPresetId(null);
     setShareCopied(false);
     setShareUrl(null);
   }
@@ -1467,17 +1255,6 @@ export default function ForecastPage() {
     }
     window.prompt("このURLをコピーして保存・共有できます", shareUrl);
     setShareCopied(true);
-  }
-
-  function applyPreset(p: Preset) {
-    const next = { ...DEFAULT_SETTINGS, ...p.patch } as FireSettings;
-    setSettings(next);
-    setAppliedSettings(next);
-    setSelectedPresetId(p.id);
-    setShareCopied(false);
-    setShareUrl(null);
-    // チャート描画（コミット）後にグラフまでスクロールするよう予約
-    pendingScrollRef.current = true;
   }
 
   const inputsValid =
@@ -1577,44 +1354,14 @@ export default function ForecastPage() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-100/70 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-zinc-900/[0.04]" aria-hidden />
-        <div className="pointer-events-none absolute -left-14 -bottom-14 w-44 h-44 rounded-full bg-zinc-400/[0.08]" aria-hidden />
-        <div className="relative flex items-end justify-between flex-wrap gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 text-[11px] text-zinc-500 mb-3 tracking-[0.18em] uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-900" />
-              Life Planner
-            </div>
-            <h1 className="text-xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-900">
-              もう夢なんてみない、FIRE特化型資産シミュレーター
-            </h1>
-            <p className="text-zinc-600 mt-2 text-xs sm:text-sm leading-relaxed max-w-2xl">
-              収入・生活費・教育費・住居費を入力すると、将来の資産推移と必要資金の目安をすぐに確認できます。
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end" />
-        </div>
-        <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2 no-print">
-          <button
-            onClick={shareURL}
-            disabled={!inputsValid}
-            className="text-xs text-zinc-700 bg-white hover:bg-zinc-50 disabled:text-zinc-300 disabled:cursor-not-allowed px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors inline-flex items-center gap-1.5"
-            type="button"
-            title="現在の入力内容をURLに保存してクリップボードにコピーします"
-          >
-            <span aria-hidden>{shareCopied ? "✓" : "🔗"}</span>
-            {shareCopied ? "URLをコピーしました" : "URLで保存"}
-          </button>
-          <button
-            onClick={resetSettings}
-            className="text-xs text-zinc-500 hover:text-zinc-900 px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors bg-white"
-            type="button"
-          >
-            ↺ リセット
-          </button>
-        </div>
+      {/* Header：何のページかを端的に伝えるミニマルな見出し */}
+      <header className="border-b border-zinc-200 pb-4">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-900">
+          FIRE・老後資金シミュレーター
+        </h1>
+        <p className="mt-1.5 text-sm text-zinc-500 leading-relaxed max-w-2xl">
+          収入・生活費・教育費・住居費を入力すると、将来の資産推移と必要資金の目安を試算できます。
+        </p>
       </header>
 
       {!inputsValid && (
@@ -1622,53 +1369,6 @@ export default function ForecastPage() {
           ⚠️ 入力値に問題があります。「現在年齢 ≤ リタイア年齢 ≤ 寿命」となるよう設定してください。
         </div>
       )}
-
-      {/* プリセット：初見ユーザーが触りやすいテンプレート */}
-      <div className="no-print rounded-2xl border border-zinc-200 bg-white p-4 lg:p-5">
-        <div className="mb-4">
-          <div className="text-sm font-semibold text-zinc-800 mb-0.5">
-            まず、近いプランを選んでください
-          </div>
-          <p className="text-xs text-zinc-500">
-            クリックすると入力欄が自動入力されます。後から自由に変更できます。
-          </p>
-          {/* 使い方ステップ */}
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] overflow-x-auto pb-0.5">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
-              <span className="font-medium text-zinc-700">プランを選ぶ</span>
-            </div>
-            <span className="text-zinc-300 shrink-0">→</span>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-500 flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
-              <span className="text-zinc-500">数字を調整する</span>
-            </div>
-            <span className="text-zinc-300 shrink-0">→</span>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-500 flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
-              <span className="text-zinc-500">「計算する」で試算</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => applyPreset(p)}
-              aria-pressed={selectedPresetId === p.id}
-              className={`text-left px-3 py-2 rounded-lg border transition-all active:scale-[0.97] ${
-                selectedPresetId === p.id
-                  ? "border-zinc-900 bg-zinc-50 ring-1 ring-zinc-900"
-                  : "border-zinc-200 hover:border-zinc-900 hover:bg-zinc-50"
-              }`}
-            >
-              <div className="text-xs font-medium text-zinc-900">{p.label}</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">{p.description}</div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {isDirty && inputsValid && result && (
         <div className="no-print sticky top-[60px] z-20 rounded-lg p-2.5 px-3 text-xs border border-zinc-300 bg-white/95 backdrop-blur shadow-sm text-zinc-700 flex items-center justify-between gap-3">
@@ -1683,339 +1383,6 @@ export default function ForecastPage() {
           >
             再計算する →
           </button>
-        </div>
-      )}
-
-      {/* Summary cards (top) */}
-      {inputsValid && result && appliedSettings && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
-          <SummaryCard
-            label="リタイアまで"
-            value={`${yearsToRetire} 年`}
-            sub={`${appliedSettings.retireAge} 歳`}
-            tone="blue"
-          />
-          <SummaryCard
-            label="リタイア時の予測資産"
-            value={formatCompactJPY(Math.round(result.assetsAtRetirement)) + "円"}
-            tone={
-              result.assetsAtRetirement >= result.requiredAssetsAtRetirement
-                ? "green"
-                : "orange"
-            }
-            tooltip="希望リタイア時点の必要資産を上回るかで色を変えています"
-          />
-          <SummaryCard
-            label="FIRE 達成"
-            value={result.fireAge !== null ? `${result.fireAge} 歳` : "未達成"}
-            sub={
-              yearsToFire !== null
-                ? `あと ${yearsToFire} 年`
-                : "前提条件では達成不可"
-            }
-            tone={result.fireAge !== null ? "purple" : "gray"}
-            href="#fire-definition"
-            tooltip="サイド収入・年金・配偶者収入を含め、FIRE後に資産が想定寿命まで持つ最初の年齢です"
-          />
-          <SummaryCard
-            label="資産寿命"
-            value={
-              result.depletionAge !== null
-                ? `${result.depletionAge} 歳`
-                : "寿命まで持続"
-            }
-            sub={
-              result.depletionAge !== null
-                ? `想定寿命 ${appliedSettings.lifeAge} 歳より早い`
-                : `想定寿命 ${appliedSettings.lifeAge} 歳`
-            }
-            tone={result.depletionAge !== null ? "red" : "green"}
-          />
-        </div>
-      )}
-
-      {/* Chart */}
-      {inputsValid && result && appliedSettings && result.rows.length > 0 && (
-        <div ref={chartRef} className="print-avoid-break scroll-mt-20">
-          <AssetsChart
-            rows={result.rows}
-            retireAge={appliedSettings.retireAge}
-            fireAge={result.fireAge}
-            pensionStartAge={appliedSettings.pensionStartAge}
-            depletionAge={result.depletionAge}
-            requiredAtRetirement={result.requiredAssetsAtRetirement}
-            fireThresholdAssets={result.fireThresholdAssets}
-            fireScenarioRows={fireScenario?.result.rows ?? null}
-          />
-        </div>
-      )}
-
-      {/* Expense breakdown chart */}
-      {inputsValid && result && appliedSettings && result.rows.length > 0 && (
-        <div className="print-avoid-break">
-          <ExpenseChart
-            rows={result.rows}
-            retireAge={appliedSettings.retireAge}
-            spouseEnabled={appliedSettings.spouse.enabled}
-          />
-        </div>
-      )}
-
-      {/* 改善アクション：「では何を変えればよいか」を提示 */}
-      {inputsValid && result && appliedSettings && (
-        <div className="no-print"><ImprovementActions settings={appliedSettings} result={result} /></div>
-      )}
-
-      {!result && inputsValid && (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7 relative overflow-hidden">
-          {/* 資産推移（サンプル） */}
-          <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
-            <div>
-              <h3 className="text-base font-semibold text-zinc-400">
-                資産推移
-                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-medium text-zinc-500 align-middle">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  サンプル
-                </span>
-              </h3>
-              <p className="text-xs text-zinc-400 mt-1">
-                年末資産（名目額）/ 横軸: 年齢
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
-              <Legend dotClass="bg-zinc-900" label="資産推移" />
-              <Legend dotClass="bg-amber-400" label="リタイア" />
-              <Legend dotClass="bg-violet-400" label="FIRE" />
-              <Legend dotClass="bg-emerald-400" label="年金開始" />
-            </div>
-          </div>
-
-          {/* 実チャートと同寸の SVG ダミー */}
-          <div className="relative">
-            <svg
-              viewBox="0 0 1000 360"
-              className="w-full h-auto"
-              preserveAspectRatio="none"
-              aria-hidden
-            >
-              <defs>
-                <linearGradient id="placeholderArea" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#18181b" stopOpacity="0.10" />
-                  <stop offset="60%" stopColor="#18181b" stopOpacity="0.03" />
-                  <stop offset="100%" stopColor="#18181b" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-
-              {/* Y grid + labels（実チャート同様） */}
-              {[24, 105, 186, 267, 324].map((yPos, i) => (
-                <g key={i}>
-                  <line
-                    x1={70}
-                    x2={976}
-                    y1={yPos}
-                    y2={yPos}
-                    stroke="#f4f4f5"
-                    strokeDasharray="2 3"
-                  />
-                  <text x={62} y={yPos + 4} fontSize="10" fill="#d4d4d8" textAnchor="end">
-                    {["1.2億円", "9000万円", "6000万円", "3000万円", "0円"][i]}
-                  </text>
-                </g>
-              ))}
-
-              {/* リタイア後背景バンド */}
-              <rect x={620} y={24} width={356} height={300} fill="#fafafa" />
-
-              {/* 必要資産ライン */}
-              <line x1={70} x2={976} y1={140} y2={140} stroke="#fbbf24" strokeOpacity="0.5" strokeDasharray="4 4" strokeWidth="1" />
-              <text x={972} y={134} fontSize="10" fill="#d97706" textAnchor="end" opacity="0.6">
-                必要資産（4%ルール）
-              </text>
-
-              {/* エリア */}
-              <path
-                d="M 70 300 L 130 290 L 200 270 L 280 235 L 360 195 L 440 155 L 520 120 L 580 100 L 620 95 L 700 130 L 780 175 L 860 220 L 920 260 L 976 290 L 976 324 L 70 324 Z"
-                fill="url(#placeholderArea)"
-              />
-
-              {/* メインライン */}
-              <polyline
-                points="70,300 130,290 200,270 280,235 360,195 440,155 520,120 580,100 620,95 700,130 780,175 860,220 920,260 976,290"
-                fill="none"
-                stroke="#18181b"
-                strokeWidth="1.75"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-
-              {/* イベント縦線 */}
-              {[
-                { x: 440, color: "#a78bfa", label: "FIRE" },
-                { x: 620, color: "#fbbf24", label: "リタイア" },
-                { x: 760, color: "#34d399", label: "年金開始" },
-              ].map((ev, i) => (
-                <g key={i}>
-                  <line
-                    x1={ev.x}
-                    x2={ev.x}
-                    y1={24}
-                    y2={324}
-                    stroke={ev.color}
-                    strokeOpacity="0.35"
-                    strokeDasharray="3 3"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={ev.x}
-                    y={36}
-                    fontSize="10"
-                    fill={ev.color}
-                    textAnchor="middle"
-                    fontWeight="600"
-                    opacity="0.7"
-                  >
-                    {ev.label}
-                  </text>
-                </g>
-              ))}
-
-              {/* X 軸ラベル */}
-              {[
-                { x: 70, label: "30" },
-                { x: 250, label: "40" },
-                { x: 440, label: "50" },
-                { x: 620, label: "60" },
-                { x: 800, label: "70" },
-                { x: 976, label: "85" },
-              ].map((t, i) => (
-                <text
-                  key={i}
-                  x={t.x}
-                  y={348}
-                  fontSize="10"
-                  fill="#d4d4d8"
-                  textAnchor="middle"
-                >
-                  {t.label}
-                </text>
-              ))}
-            </svg>
-          </div>
-
-          {/* 収入と支出の推移（プレビュー） */}
-          <div className="mt-8 pt-6 border-t border-zinc-100">
-            <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
-              <div>
-                <h3 className="text-base font-semibold text-zinc-400">
-                  収入と支出の推移
-                  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-medium text-zinc-500 align-middle">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    サンプル
-                  </span>
-                </h3>
-                <p className="text-xs text-zinc-400 mt-1">
-                  年間収入（実線）と支出（積み上げ）/ 横軸: 年齢
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
-                <Legend dotClass="" colorHex="#18181b" label={settings.spouse.enabled ? "収入（本人＋配偶者）" : "収入"} />
-                <Legend dotClass="" colorHex="#3b82f6" label="生活費" />
-                <Legend dotClass="" colorHex="#10b981" label="住居費" />
-                <Legend dotClass="" colorHex="#f59e0b" label="その他" />
-              </div>
-            </div>
-
-            <div className="relative">
-              <svg
-                viewBox="0 0 1000 320"
-                className="w-full h-auto"
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                {/* Y grid + labels */}
-                {[24, 95, 166, 237, 284].map((yPos, i) => (
-                  <g key={i}>
-                    <line
-                      x1={70}
-                      x2={976}
-                      y1={yPos}
-                      y2={yPos}
-                      stroke="#f4f4f5"
-                      strokeDasharray="2 3"
-                    />
-                    <text x={62} y={yPos + 4} fontSize="10" fill="#d4d4d8" textAnchor="end">
-                      {["1000万円", "750万円", "500万円", "250万円", "0円"][i]}
-                    </text>
-                  </g>
-                ))}
-
-                {/* リタイア後背景バンド */}
-                <rect x={620} y={24} width={356} height={260} fill="#fafafa" />
-
-                {/* 積み上げエリア（下から: 生活費 → 住居費 → その他） */}
-                {/* 生活費 */}
-                <path
-                  d="M 70 220 L 200 215 L 360 210 L 520 205 L 620 205 L 760 215 L 900 220 L 976 222 L 976 284 L 70 284 Z"
-                  fill="#3b82f6"
-                  fillOpacity="0.7"
-                />
-                {/* 住居費 */}
-                <path
-                  d="M 70 175 L 200 172 L 360 168 L 520 165 L 620 168 L 760 195 L 900 220 L 976 222 L 976 222 L 900 220 L 760 215 L 620 205 L 520 205 L 360 210 L 200 215 L 70 220 Z"
-                  fill="#10b981"
-                  fillOpacity="0.7"
-                />
-                {/* その他 */}
-                <path
-                  d="M 70 150 L 200 148 L 360 145 L 520 142 L 620 148 L 760 178 L 900 205 L 976 210 L 976 222 L 900 220 L 760 195 L 620 168 L 520 165 L 360 168 L 200 172 L 70 175 Z"
-                  fill="#f59e0b"
-                  fillOpacity="0.7"
-                />
-
-                {/* 収入線（リタイアにかけて0へ滑らかに） */}
-                <polyline
-                  points="70,95 200,80 360,60 520,52 600,55 620,95 640,180 680,255 720,284 976,284"
-                  fill="none"
-                  stroke="#18181b"
-                  strokeWidth="1.75"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-
-                {/* リタイア縦線 */}
-                <line x1={620} x2={620} y1={24} y2={284} stroke="#fbbf24" strokeOpacity="0.35" strokeDasharray="3 3" strokeWidth="1" />
-                <text x={620} y={36} fontSize="10" fill="#d97706" textAnchor="middle" fontWeight="600" opacity="0.7">
-                  リタイア
-                </text>
-
-                {/* X 軸ラベル */}
-                {[
-                  { x: 70, label: "30" },
-                  { x: 250, label: "40" },
-                  { x: 440, label: "50" },
-                  { x: 620, label: "60" },
-                  { x: 800, label: "70" },
-                  { x: 976, label: "85" },
-                ].map((t, i) => (
-                  <text key={i} x={t.x} y={308} fontSize="10" fill="#d4d4d8" textAnchor="middle">
-                    {t.label}
-                  </text>
-                ))}
-              </svg>
-            </div>
-          </div>
-
-          {/* ごく薄いオーバーレイ（サンプルと示す程度、グラフは見えるまま） */}
-          <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-2xl" />
-
-          {/* 下部スリムバナー */}
-          <div className="absolute bottom-3 inset-x-3 pointer-events-none">
-            <div className="bg-zinc-900/75 backdrop-blur-sm rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-white/90">
-              <span>入力して</span>
-              <span className="font-semibold text-white">「計算する」</span>
-              <span>を押すと、このグラフがあなたの試算結果に切り替わります</span>
-            </div>
-          </div>
         </div>
       )}
 
@@ -2908,19 +2275,392 @@ export default function ForecastPage() {
         <p className="text-xs text-zinc-500 mb-3">
           すべての項目を入力したら、下のボタンで結果を計算しましょう
         </p>
-        <button
-          onClick={applyChanges}
-          disabled={!inputsValid}
-          className="text-sm font-medium text-white bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 disabled:cursor-not-allowed px-8 py-3 rounded-lg transition-colors inline-flex items-center gap-2 relative"
-          type="button"
-        >
-          <span aria-hidden>▶</span>
-          {result ? "再計算する" : "計算する"}
-          {isDirty && result && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+        <div className="flex items-center justify-center flex-wrap gap-2">
+          <button
+            onClick={applyChanges}
+            disabled={!inputsValid}
+            className="text-sm font-medium text-white bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 disabled:cursor-not-allowed px-8 py-3 rounded-lg transition-colors inline-flex items-center gap-2 relative"
+            type="button"
+          >
+            <span aria-hidden>▶</span>
+            {result ? "再計算する" : "計算する"}
+            {isDirty && result && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+            )}
+          </button>
+          {result && (
+            <button
+              onClick={resetSettings}
+              className="text-sm text-zinc-500 hover:text-zinc-900 px-5 py-3 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors bg-white"
+              type="button"
+            >
+              ↺ リセット
+            </button>
           )}
-        </button>
+        </div>
       </div>
+
+      {/* 結果が出たタイミングで、保存・リセットに自然に気づけるようにする */}
+      {inputsValid && result && appliedSettings && (
+        <div ref={resultRef} className="no-print flex items-center justify-between flex-wrap gap-2 -mb-1 scroll-mt-24">
+          <div className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            試算結果
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button
+              onClick={shareURL}
+              disabled={!inputsValid}
+              className="text-xs text-zinc-700 bg-white hover:bg-zinc-50 disabled:text-zinc-300 disabled:cursor-not-allowed px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors inline-flex items-center gap-1.5"
+              type="button"
+              title="現在の入力内容をURLに保存してクリップボードにコピーします"
+            >
+              <span aria-hidden>{shareCopied ? "✓" : "🔗"}</span>
+              {shareCopied ? "URLをコピーしました" : "URLで保存"}
+            </button>
+            <button
+              onClick={resetSettings}
+              className="text-xs text-zinc-500 hover:text-zinc-900 px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 transition-colors bg-white"
+              type="button"
+            >
+              ↺ リセット
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Summary cards */}
+      {inputsValid && result && appliedSettings && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
+          <SummaryCard
+            label="リタイアまで"
+            value={`${yearsToRetire} 年`}
+            sub={`${appliedSettings.retireAge} 歳`}
+            tone="blue"
+          />
+          <SummaryCard
+            label="リタイア時の予測資産"
+            value={formatCompactJPY(Math.round(result.assetsAtRetirement)) + "円"}
+            tone={
+              result.assetsAtRetirement >= result.requiredAssetsAtRetirement
+                ? "green"
+                : "orange"
+            }
+            tooltip="希望リタイア時点の必要資産を上回るかで色を変えています"
+          />
+          <SummaryCard
+            label="FIRE 達成"
+            value={result.fireAge !== null ? `${result.fireAge} 歳` : "未達成"}
+            sub={
+              yearsToFire !== null
+                ? `あと ${yearsToFire} 年`
+                : "前提条件では達成不可"
+            }
+            tone={result.fireAge !== null ? "purple" : "gray"}
+            href="#fire-definition"
+            tooltip="サイド収入・年金・配偶者収入を含め、FIRE後に資産が想定寿命まで持つ最初の年齢です"
+          />
+          <SummaryCard
+            label="資産寿命"
+            value={
+              result.depletionAge !== null
+                ? `${result.depletionAge} 歳`
+                : "寿命まで持続"
+            }
+            sub={
+              result.depletionAge !== null
+                ? `想定寿命 ${appliedSettings.lifeAge} 歳より早い`
+                : `想定寿命 ${appliedSettings.lifeAge} 歳`
+            }
+            tone={result.depletionAge !== null ? "red" : "green"}
+          />
+        </div>
+      )}
+
+      {/* Chart */}
+      {inputsValid && result && appliedSettings && result.rows.length > 0 && (
+        <div ref={chartRef} className="print-avoid-break scroll-mt-20">
+          <AssetsChart
+            rows={result.rows}
+            retireAge={appliedSettings.retireAge}
+            fireAge={result.fireAge}
+            pensionStartAge={appliedSettings.pensionStartAge}
+            depletionAge={result.depletionAge}
+            requiredAtRetirement={result.requiredAssetsAtRetirement}
+            fireThresholdAssets={result.fireThresholdAssets}
+            fireScenarioRows={fireScenario?.result.rows ?? null}
+          />
+        </div>
+      )}
+
+      {/* Expense breakdown chart */}
+      {inputsValid && result && appliedSettings && result.rows.length > 0 && (
+        <div className="print-avoid-break">
+          <ExpenseChart
+            rows={result.rows}
+            retireAge={appliedSettings.retireAge}
+            spouseEnabled={appliedSettings.spouse.enabled}
+          />
+        </div>
+      )}
+
+      {/* 改善アクション：「では何を変えればよいか」を提示 */}
+      {inputsValid && result && appliedSettings && (
+        <div className="no-print"><ImprovementActions settings={appliedSettings} result={result} /></div>
+      )}
+
+      {!result && inputsValid && (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 lg:p-7 relative overflow-hidden">
+          {/* 資産推移（サンプル） */}
+          <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
+            <div>
+              <h3 className="text-base font-semibold text-zinc-400">
+                資産推移
+                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-medium text-zinc-500 align-middle">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  サンプル
+                </span>
+              </h3>
+              <p className="text-xs text-zinc-400 mt-1">
+                年末資産（名目額）/ 横軸: 年齢
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
+              <Legend dotClass="bg-zinc-900" label="資産推移" />
+              <Legend dotClass="bg-amber-400" label="リタイア" />
+              <Legend dotClass="bg-violet-400" label="FIRE" />
+              <Legend dotClass="bg-emerald-400" label="年金開始" />
+            </div>
+          </div>
+
+          {/* 実チャートと同寸の SVG ダミー */}
+          <div className="relative">
+            <svg
+              viewBox="0 0 1000 360"
+              className="w-full h-auto"
+              preserveAspectRatio="none"
+              aria-hidden
+            >
+              <defs>
+                <linearGradient id="placeholderArea" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#18181b" stopOpacity="0.10" />
+                  <stop offset="60%" stopColor="#18181b" stopOpacity="0.03" />
+                  <stop offset="100%" stopColor="#18181b" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+
+              {/* Y grid + labels（実チャート同様） */}
+              {[24, 105, 186, 267, 324].map((yPos, i) => (
+                <g key={i}>
+                  <line
+                    x1={70}
+                    x2={976}
+                    y1={yPos}
+                    y2={yPos}
+                    stroke="#f4f4f5"
+                    strokeDasharray="2 3"
+                  />
+                  <text x={62} y={yPos + 4} fontSize="10" fill="#d4d4d8" textAnchor="end">
+                    {["1.2億円", "9000万円", "6000万円", "3000万円", "0円"][i]}
+                  </text>
+                </g>
+              ))}
+
+              {/* リタイア後背景バンド */}
+              <rect x={620} y={24} width={356} height={300} fill="#fafafa" />
+
+              {/* 必要資産ライン */}
+              <line x1={70} x2={976} y1={140} y2={140} stroke="#fbbf24" strokeOpacity="0.5" strokeDasharray="4 4" strokeWidth="1" />
+              <text x={972} y={134} fontSize="10" fill="#d97706" textAnchor="end" opacity="0.6">
+                必要資産（4%ルール）
+              </text>
+
+              {/* エリア */}
+              <path
+                d="M 70 300 L 130 290 L 200 270 L 280 235 L 360 195 L 440 155 L 520 120 L 580 100 L 620 95 L 700 130 L 780 175 L 860 220 L 920 260 L 976 290 L 976 324 L 70 324 Z"
+                fill="url(#placeholderArea)"
+              />
+
+              {/* メインライン */}
+              <polyline
+                points="70,300 130,290 200,270 280,235 360,195 440,155 520,120 580,100 620,95 700,130 780,175 860,220 920,260 976,290"
+                fill="none"
+                stroke="#18181b"
+                strokeWidth="1.75"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+
+              {/* イベント縦線 */}
+              {[
+                { x: 440, color: "#a78bfa", label: "FIRE" },
+                { x: 620, color: "#fbbf24", label: "リタイア" },
+                { x: 760, color: "#34d399", label: "年金開始" },
+              ].map((ev, i) => (
+                <g key={i}>
+                  <line
+                    x1={ev.x}
+                    x2={ev.x}
+                    y1={24}
+                    y2={324}
+                    stroke={ev.color}
+                    strokeOpacity="0.35"
+                    strokeDasharray="3 3"
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={ev.x}
+                    y={36}
+                    fontSize="10"
+                    fill={ev.color}
+                    textAnchor="middle"
+                    fontWeight="600"
+                    opacity="0.7"
+                  >
+                    {ev.label}
+                  </text>
+                </g>
+              ))}
+
+              {/* X 軸ラベル */}
+              {[
+                { x: 70, label: "30" },
+                { x: 250, label: "40" },
+                { x: 440, label: "50" },
+                { x: 620, label: "60" },
+                { x: 800, label: "70" },
+                { x: 976, label: "85" },
+              ].map((t, i) => (
+                <text
+                  key={i}
+                  x={t.x}
+                  y={348}
+                  fontSize="10"
+                  fill="#d4d4d8"
+                  textAnchor="middle"
+                >
+                  {t.label}
+                </text>
+              ))}
+            </svg>
+          </div>
+
+          {/* 収入と支出の推移（プレビュー） */}
+          <div className="mt-8 pt-6 border-t border-zinc-100">
+            <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-zinc-400">
+                  収入と支出の推移
+                  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-medium text-zinc-500 align-middle">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    サンプル
+                  </span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-1">
+                  年間収入（実線）と支出（積み上げ）/ 横軸: 年齢
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
+                <Legend dotClass="" colorHex="#18181b" label={settings.spouse.enabled ? "収入（本人＋配偶者）" : "収入"} />
+                <Legend dotClass="" colorHex="#3b82f6" label="生活費" />
+                <Legend dotClass="" colorHex="#10b981" label="住居費" />
+                <Legend dotClass="" colorHex="#f59e0b" label="その他" />
+              </div>
+            </div>
+
+            <div className="relative">
+              <svg
+                viewBox="0 0 1000 320"
+                className="w-full h-auto"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                {/* Y grid + labels */}
+                {[24, 95, 166, 237, 284].map((yPos, i) => (
+                  <g key={i}>
+                    <line
+                      x1={70}
+                      x2={976}
+                      y1={yPos}
+                      y2={yPos}
+                      stroke="#f4f4f5"
+                      strokeDasharray="2 3"
+                    />
+                    <text x={62} y={yPos + 4} fontSize="10" fill="#d4d4d8" textAnchor="end">
+                      {["1000万円", "750万円", "500万円", "250万円", "0円"][i]}
+                    </text>
+                  </g>
+                ))}
+
+                {/* リタイア後背景バンド */}
+                <rect x={620} y={24} width={356} height={260} fill="#fafafa" />
+
+                {/* 積み上げエリア（下から: 生活費 → 住居費 → その他） */}
+                {/* 生活費 */}
+                <path
+                  d="M 70 220 L 200 215 L 360 210 L 520 205 L 620 205 L 760 215 L 900 220 L 976 222 L 976 284 L 70 284 Z"
+                  fill="#3b82f6"
+                  fillOpacity="0.7"
+                />
+                {/* 住居費 */}
+                <path
+                  d="M 70 175 L 200 172 L 360 168 L 520 165 L 620 168 L 760 195 L 900 220 L 976 222 L 976 222 L 900 220 L 760 215 L 620 205 L 520 205 L 360 210 L 200 215 L 70 220 Z"
+                  fill="#10b981"
+                  fillOpacity="0.7"
+                />
+                {/* その他 */}
+                <path
+                  d="M 70 150 L 200 148 L 360 145 L 520 142 L 620 148 L 760 178 L 900 205 L 976 210 L 976 222 L 900 220 L 760 195 L 620 168 L 520 165 L 360 168 L 200 172 L 70 175 Z"
+                  fill="#f59e0b"
+                  fillOpacity="0.7"
+                />
+
+                {/* 収入線（リタイアにかけて0へ滑らかに） */}
+                <polyline
+                  points="70,95 200,80 360,60 520,52 600,55 620,95 640,180 680,255 720,284 976,284"
+                  fill="none"
+                  stroke="#18181b"
+                  strokeWidth="1.75"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+
+                {/* リタイア縦線 */}
+                <line x1={620} x2={620} y1={24} y2={284} stroke="#fbbf24" strokeOpacity="0.35" strokeDasharray="3 3" strokeWidth="1" />
+                <text x={620} y={36} fontSize="10" fill="#d97706" textAnchor="middle" fontWeight="600" opacity="0.7">
+                  リタイア
+                </text>
+
+                {/* X 軸ラベル */}
+                {[
+                  { x: 70, label: "30" },
+                  { x: 250, label: "40" },
+                  { x: 440, label: "50" },
+                  { x: 620, label: "60" },
+                  { x: 800, label: "70" },
+                  { x: 976, label: "85" },
+                ].map((t, i) => (
+                  <text key={i} x={t.x} y={308} fontSize="10" fill="#d4d4d8" textAnchor="middle">
+                    {t.label}
+                  </text>
+                ))}
+              </svg>
+            </div>
+          </div>
+
+          {/* ごく薄いオーバーレイ（サンプルと示す程度、グラフは見えるまま） */}
+          <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-2xl" />
+
+          {/* 下部スリムバナー */}
+          <div className="absolute bottom-3 inset-x-3 pointer-events-none">
+            <div className="bg-zinc-900/75 backdrop-blur-sm rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-white/90">
+              <span>入力して</span>
+              <span className="font-semibold text-white">「計算する」</span>
+              <span>を押すと、このグラフがあなたの試算結果に切り替わります</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detail table */}
       {inputsValid && result && result.rows.length > 0 && (() => {
