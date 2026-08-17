@@ -1996,14 +1996,10 @@ export default function ForecastPage() {
           {/* 中央オーバーレイ案内 */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
             <div className="bg-white/95 backdrop-blur-sm border border-emerald-200 rounded-xl px-5 py-4 shadow-lg text-center max-w-md">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-700 mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                完全無料・メールアドレス登録不要
-              </div>
               <p className="text-sm text-zinc-700 leading-relaxed">
-                下にスクロールして各項目を入力し、
+                スクロールして各項目を入力し、
                 <span className="font-semibold text-zinc-900">「計算する」</span>
-                ボタンを押すと、資産推移と収入・支出の推移グラフが表示されます。
+                を押すと、資産推移と収入・支出の推移グラフが表示されます。
               </p>
               <p className="mt-2 text-[11px] text-zinc-500">
                 ※ 下のグラフは表示イメージのサンプルです。あなたの計算結果ではありません。

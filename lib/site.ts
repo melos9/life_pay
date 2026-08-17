@@ -12,13 +12,14 @@ export const DEFAULT_OG_TITLE =
   "もう夢なんてみない、FIRE特化型資産シミュレーター｜FIRE・老後資金を無料試算";
 
 /**
- * SEO 用の絶対 URL を生成する。next.config の `trailingSlash: true` に合わせ、
- * 実際に配信される URL と canonical / OG / sitemap を一致させるため末尾スラッシュを付ける。
+ * SEO 用の絶対 URL を生成する。next.config の `trailingSlash: false` に合わせ、
+ * 実際に配信される URL と canonical / OG / sitemap を一致させるため末尾スラッシュを付けない。
+ * (末尾スラッシュがあるとサーバーが 301 リダイレクトを返し GSC でインデックス未登録になる)
  */
 export function absoluteUrl(path = "/"): string {
   if (!path || path === "/") return `${SITE_URL}/`;
   const clean = path.startsWith("/") ? path : `/${path}`;
-  return `${SITE_URL}${clean.endsWith("/") ? clean : `${clean}/`}`;
+  return `${SITE_URL}${clean.replace(/\/+$/, "")}`;
 }
 
 export const SITE_KEYWORDS = [

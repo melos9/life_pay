@@ -5,8 +5,9 @@ const basePath =
 const nextConfig: NextConfig = {
   output: "export",
   basePath,
-  // GitHub Pages は trailingSlash ありの方がサブパスでの index.html 配信が安定する。
-  trailingSlash: true,
+  // trailingSlash を false にすることで /guide/slug.html として出力され、
+  // GitHub Pages がリダイレクトなしで直接 200 を返す。
+  trailingSlash: false,
   images: { unoptimized: true },
   // クライアント側の Link がアセットパスを作る際に使う。
   assetPrefix: basePath || undefined,
